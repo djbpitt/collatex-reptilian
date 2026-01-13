@@ -36,7 +36,6 @@ lazy val root = (project in file("."))
       "de.sciss" %% "fingertree" % "1.5.5",
       "org.scala-lang.modules" %% "scala-xml" % "2.3.0",
       "io.github.pityka" %% "pairwisealignment" % "2.2.7",
-      "nl.gn0s1s" %% "osita" % "0.0.2" cross CrossVersion.for3Use2_13,
       "de.sciss" %% "linkernighantsp" % "0.1.3",
       "org.typelevel" %% "cats-core" % "2.12.0",
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.3.0",
