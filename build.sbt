@@ -30,7 +30,7 @@ lazy val root = (project in file("."))
       "org.relaxng" % "jing" % "20241231",
       "com.lihaoyi" %% "os-lib" % "0.10.1",
       "com.lihaoyi" %% "upickle" % "4.3.0",
-      "com.github.haifengl" %% "smile-scala" % "3.1.1" cross CrossVersion.for3Use2_13 exclude ("org.scala-lang.modules", "scala-xml_2.13"),
+      "com.github.haifengl" %% "smile-scala" % "5.1.0",
       "org.scalatest" %% "scalatest" % "3.2.15" % Test,
       "com.lihaoyi" %% "scalatags" % "0.12.0",
       "de.sciss" %% "fingertree" % "1.5.5",
