@@ -219,8 +219,11 @@ object TextWidth:
 
   object FontStack {
 
-    // Cache installed family names (non-localized) once
-    private val installed: Set[String] =
+    // Don't cache installed family names (non-localized)
+    // NB: We changed from val to def to force rereading because testing modifies the
+    //   values, but that imposes a cost in production. The cost is small because we
+    //   don't call this often, but we could make the implementation more efficient.
+    private def installed: Set[String] =
       GraphicsEnvironment.getLocalGraphicsEnvironment
         .getAvailableFontFamilyNames(Locale.ROOT)
         .toSet
