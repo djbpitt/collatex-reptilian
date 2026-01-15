@@ -8,8 +8,11 @@
         <h1>CollateX Reptilian Documentation: Web service</h1>
         <section>
             <section>
-                <h2>General</h2>
-                <p>Default port is 8082 (specified in config.yaml)</p>
+                <h2>Launching</h2>
+                <p>Launch (from directory where fat jar is created) with <code>java -cp
+                        collatex-reptilian-0.1.0-SNAPSHOT.jar
+                        net.collatex.reptilian.WebService</code>. Optionally specify port in
+                        <i>config.yaml</i>; otherwise default value of 8082 is used.</p>
             </section>
             <section>
                 <h2>Default API</h2>
@@ -26,11 +29,18 @@
                 <p>Note that the manifest requires a name.</p>
                 <p>Currently just echoes input (all fields).</p>
             </section>
+            <section>
+                <h2>Logging</h2>
+                <p>Logs to <i>logs</i> subdirectory of working directory on launch. For example, if
+                    we launch from <i>target/scala-3.7.1</i>, a <i>logs</i> subdirectory will be
+                    created under there with <i>reptilian.log</i> file. Logs cycle; see
+                        <i>src/main/resources/logback.xml</i> for configuration details.</p>
+            </section>
             <hr />
             <section>
                 <h2>Misc</h2>
-                <p>To test connectivity</p>
-                <pre>curl -X POST http://localhost:8082/hello/Ronald</pre>
+                <p>To test connectivity (GET, not POST):</p>
+                <pre>curl http://localhost:8082/hello/Ronald</pre>
                 <p>Returns <q>Hello Ronald</q></p>
             </section>
         </section>
