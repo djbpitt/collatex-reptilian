@@ -64,7 +64,7 @@ enum Hypergraph[L, V]:
       case Hyperedge(label, _)             => Set(label)
       case FullHypergraph(im1, _)          => im1.keySet
 
-  // Use Hyperedge.vertices or the apply(label: L) methods instead
+  // Use Hyperedge.verticesIterator or the apply(label: L) methods instead
   // return the vertices associated with the hyperedge with label L
   @deprecated
   def members(hyperedge: L): Set[V] =
