@@ -5,8 +5,6 @@ import net.collatex.util.{EdgeLabeledDirectedGraph, Graph, Hypergraph}
 import net.collatex.reptilian.AlignmentHyperedge
 import net.collatex.util.Hypergraph.Hyperedge
 
-import scala.annotation.tailrec
-
 enum DGNodeType:
   case Alignment
   case Skip
@@ -50,23 +48,6 @@ enum MatchesSide:
 def nodeAtEnd(node: DecisionGraphStepPhase2, max: Int): Boolean =
   node.pos1 == max - 1 || node.pos2 == max - 1
 
-/** Adjust two sequences of hyperedge matches to remove transpositions
-  *
-  * @param order1
-  *   Stuff
-  * @param order2
-  *   Stuff
-  *
-  * Called only when transposition detected, so there are always at least two matches
-  *
-  * We've split the original hyperedges (from hg1, hg2), but the order within one or the other hasn’t changed. This
-  * function determines which side of a match came from original hg1 and which from hg2. This lets us group the match
-  * sides by original hg. Because we lose contact with the original hg source when we create a match, we have to
-  * reconstruct it here.
-  *
-  * TODO: Revise HyperedgeMatch to retain consistent information about source hg, so that we don’t have to reconstruct
-  * it.
-  */
 extension [N](graph: Graph[N])
   def asDot(toNodeInfo: N => NodeInfo): String =
     graph match
@@ -111,7 +92,7 @@ extension (graph: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, Traversa
           adjacencyMap.keys.map { k =>
             val label = k match {
               case n: DecisionGraphStepPhase2Enum.Internal => n.HEMatch.head.v.head.nString
-              case n: DecisionGraphStepPhase2Enum.Terminal => "Terminus"
+              case _: DecisionGraphStepPhase2Enum.Terminal => "Terminus"
             }
             List(dotId(k), " [label=\"", label, "\"];").mkString
           }.toList :::

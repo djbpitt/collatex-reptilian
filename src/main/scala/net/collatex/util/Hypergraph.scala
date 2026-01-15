@@ -54,27 +54,6 @@ enum Hypergraph[L, V]:
     val result = thisPairs.diff(otherPairs)
     Hypergraph.fromIncidencePairs(result)
 
-  // Use hyperedges instead
-  // returns the set of hyperedge labels present in this hypergraph
-  @deprecated
-  def hyperedgeLabels: Set[L] =
-    this match
-      case _: EmptyHypergraph[L, V]        => Set.empty
-      case _: OnlyVerticesHypergraph[L, V] => Set.empty
-      case Hyperedge(label, _)             => Set(label)
-      case FullHypergraph(im1, _)          => im1.keySet
-
-  // Use Hyperedge.verticesIterator or the apply(label: L) methods instead
-  // return the vertices associated with the hyperedge with label L
-  @deprecated
-  def members(hyperedge: L): Set[V] =
-    this match
-      case _: EmptyHypergraph[L, V]        => Set.empty
-      case _: OnlyVerticesHypergraph[L, V] => Set.empty
-      case Hyperedge(label, vertices) =>
-        if label == hyperedge then vertices else Set.empty
-      case FullHypergraph(im1, _) => im1(hyperedge)
-
   // returns all the vertices in this hypergraph
   def verticesIterator: Iterator[V] =
     this match

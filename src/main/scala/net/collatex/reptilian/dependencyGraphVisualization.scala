@@ -145,7 +145,7 @@ def dependencyGraphToDot(
     depGraph: Graph[NodeType],
     hg: Hypergraph[EdgeLabel, TokenRange]
 ): Unit =
-  val hgId = hg.hyperedgeLabels.map(_.toString).toSeq.sorted.mkString("-").slice(0, 200)
+  val hgId = hg.hyperedges.map(_.label.toString).toSeq.sorted.mkString("-").slice(0, 200)
   val prologue = "digraph G {\n\t"
   val epilogue = "\n}"
   val edges = depGraph.toMap
@@ -158,7 +158,15 @@ def dependencyGraphToDot(
     .flatMap((k, v) => Set(k, v))
     .toSet
     .diff(Set(NodeType("starts"), NodeType("ends")))
-    .map(k => k -> Vector("\"", k, ": ", hg.members(EdgeLabel(k)).head.tString, "\"").mkString)
+    .map(k =>
+      k -> Vector(
+        "\"",
+        k,
+        ": ",
+        hg(EdgeLabel(k)).getOrElse(throw new RuntimeException("Should not happen")).verticesIterator.next.tString,
+        "\""
+      ).mkString
+    )
     .toMap ++ Map(NodeType("starts") -> "starts", NodeType("ends") -> "ends")
   val dotEdges = edges
     .map((k, v) => Vector(k.toString, " -> ", v.toString).mkString)
