@@ -1,12 +1,10 @@
 package net.collatex.reptilian.display
 
 import java.awt.{Font, GraphicsEnvironment}
-import java.awt.font.{FontRenderContext, TextAttribute, TextLayout}
-import java.awt.geom.AffineTransform
+import java.awt.font.{TextAttribute, TextLayout}
 import java.text.{AttributedString, Normalizer}
 import java.util
 import java.util.Locale
-import scala.collection.concurrent.TrieMap
 import scala.util.chaining.scalaUtilChainingOps
 
 /** Text measurement utilities grouped under a single module namespace. */
@@ -298,8 +296,8 @@ object TextWidth:
     new java.awt.font.FontRenderContext(tx, antialiased, fractional)
 
   /* Default font is wide serif 16pt */
-  val defaultFontStack = "Georgia, Palatino, 'Palatino Linotype', serif"
-  val fontSize = 16f
+  private val defaultFontStack = "Georgia, Palatino, 'Palatino Linotype', serif"
+  private val fontSize = 16f
   val defaultFamily: String =
     TextWidth.FontStack.firstInstalledFamily(defaultFontStack)
   // 2) As a Measurer (recommended for your rendering path)
