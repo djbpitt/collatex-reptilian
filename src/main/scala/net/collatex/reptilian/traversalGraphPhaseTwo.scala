@@ -5,8 +5,6 @@ import net.collatex.util.{EdgeLabeledDirectedGraph, Graph, Hypergraph}
 import net.collatex.reptilian.AlignmentHyperedge
 import net.collatex.util.Hypergraph.Hyperedge
 
-import scala.annotation.tailrec
-
 enum DGNodeType:
   case Alignment
   case Skip
@@ -50,27 +48,33 @@ enum MatchesSide:
 def nodeAtEnd(node: DecisionGraphStepPhase2, max: Int): Boolean =
   node.pos1 == max - 1 || node.pos2 == max - 1
 
-/** Adjust two sequences of hyperedge matches to remove transpositions
-  *
-  * @param order1
-  *   Stuff
-  * @param order2
-  *   Stuff
-  *
-  * Called only when transposition detected, so there are always at least two matches
-  *
-  * We've split the original hyperedges (from hg1, hg2), but the order within one or the other hasn’t changed. This
-  * function determines which side of a match came from original hg1 and which from hg2. This lets us group the match
-  * sides by original hg. Because we lose contact with the original hg source when we create a match, we have to
-  * reconstruct it here.
-  *
-  * TODO: Revise HyperedgeMatch to retain consistent information about source hg, so that we don’t have to reconstruct
-  * it.
-  */
 extension [N](graph: Graph[N])
-  def asDot(toNodeInfo: N => NodeInfo): String =
+  private def asDot(toNodeInfo: N => NodeInfo): String =
+    def asDotLines(toNodeInfo: N => NodeInfo)(node: N, adjacentNodes: (Set[N], Set[N])): List[String] = {
+      val (incoming, outgoing) = adjacentNodes
+      incoming.toList.map(i => s"${toNodeInfo(i).id.replace('-', 'm')} -> ${toNodeInfo(node).id}") ++
+        outgoing.toList.map(o => s"${toNodeInfo(node).id.replace('-', 'm')} -> ${toNodeInfo(o).id}") ++
+        ((incoming ++ outgoing).toList map (node =>
+          val bgColor = node.asInstanceOf[DecisionGraphStepPhase2].nodeType match
+            case Alignment => "lightblue"
+            case Skip      => "lightpink"
+          val id = s"${toNodeInfo(node).id}"
+          s"${id.replace('-', 'm')} [style=\"filled\"; fillcolor=\"$bgColor\"]"
+        ))
+    }
     graph match
-      case Graph.EmptyGraph()          => "graph EMPTY {}"
+      case Graph.EmptyGraph() => "graph EMPTY {}"
+      case x: Graph.DirectedEdge[N] =>
+        (
+          List("digraph G {") :::
+            x.toMap
+              .flatMap(asDotLines(e => toNodeInfo(e)))
+              .toSet
+              .map(indent)
+              .toList
+              .sorted :::
+            List("}")
+        ).mkString("\n")
       case Graph.SingleNodeGraph(node) => s"graph SINGLE {\n${toNodeInfo(node)}\n}"
       case Graph.DirectedGraph(adjacencyMap) =>
         (
@@ -84,26 +88,27 @@ extension [N](graph: Graph[N])
             List("}")
         ).mkString("\n")
 
-  def dotNodeType(n: N): DGNodeType = n.asInstanceOf[DecisionGraphStepPhase2].nodeType
-  def asDotLines(toNodeInfo: N => NodeInfo)(node: N, adjacentNodes: (Set[N], Set[N])): List[String] = {
-    val (incoming, outgoing) = adjacentNodes
-    incoming.toList.map(i => s"${toNodeInfo(i).id.replace('-', 'm')} -> ${toNodeInfo(node).id}") ++
-      outgoing.toList.map(o => s"${toNodeInfo(node).id.replace('-', 'm')} -> ${toNodeInfo(o).id}") ++
-      ((incoming ++ outgoing).toList map (node =>
-        val bgColor = node.asInstanceOf[DecisionGraphStepPhase2].nodeType match
-          case Alignment => "lightblue"
-          case Skip      => "lightpink"
-        val id = s"${toNodeInfo(node).id}"
-        s"${id.replace('-', 'm')} [style=\"filled\"; fillcolor=\"$bgColor\"]"
-      ))
-  }
-
 extension (graph: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties])
-  def dotId(node: DecisionGraphStepPhase2Enum): String =
-    List("n", node.pos1, node.pos2).mkString("X").replace('-', 'm')
   def asDot: String =
+    def dotId(node: DecisionGraphStepPhase2Enum): String =
+      List("n", node.pos1, node.pos2).mkString("X").replace('-', 'm')
     graph match
       case EdgeLabeledDirectedGraph.EmptyGraph() => "graph EMPTY {}"
+      // Single-edge graph unlikely visualization candidate; included to satisfy complete pattern match
+      case x: EdgeLabeledDirectedGraph.LabeledEdge[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] =>
+        (List("digraph G {") :::
+          x.toMap._1.keys.map { k =>
+            val label = k match {
+              case n: DecisionGraphStepPhase2Enum.Internal => n.HEMatch.head.v.head.nString
+              case _: DecisionGraphStepPhase2Enum.Terminal => "Terminus"
+            }
+            List(dotId(k), " [label=\"", label, "\"];").mkString
+          }.toList :::
+          graph.edges.map { e =>
+            List(dotId(e.source), " -> ", dotId(e.target), ";").mkString
+          }.toList
+          ::: List("}")).mkString("\n")
+
       case EdgeLabeledDirectedGraph.SingleNodeGraph(node: DecisionGraphStepPhase2Enum) =>
         s"graph SINGLE ${node.pretty}\n}"
       case EdgeLabeledDirectedGraph.DirectedGraph(adjacencyMap, _) =>
@@ -111,7 +116,7 @@ extension (graph: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, Traversa
           adjacencyMap.keys.map { k =>
             val label = k match {
               case n: DecisionGraphStepPhase2Enum.Internal => n.HEMatch.head.v.head.nString
-              case n: DecisionGraphStepPhase2Enum.Terminal => "Terminus"
+              case _: DecisionGraphStepPhase2Enum.Terminal => "Terminus"
             }
             List(dotId(k), " [label=\"", label, "\"];").mkString
           }.toList :::
@@ -134,12 +139,10 @@ def toNodeInfo(n: DecisionGraphStepPhase2) = {
  * TODO: Add edge information (weight, label) */
 
 def traversalGraphPhase2(
-    hg: Hypergraph[EdgeLabel, TokenRange],
     order1: List[HyperedgeMatch], // corresponds (with the following) to blockOrderForWitnesses in Phase 1
     order2: List[HyperedgeMatch]
 ): EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] =
-  if order1.isEmpty || order2.isEmpty then
-    throw RuntimeException("There are no matches to merge the graph with!")
+  if order1.isEmpty || order2.isEmpty then throw RuntimeException("There are no matches to merge the graph with!")
   val startNode = DecisionGraphStepPhase2Enum.Terminal(-1, -1)
   val endNode = DecisionGraphStepPhase2Enum.Terminal(Int.MaxValue, Int.MaxValue)
   val dataNodes: List[DecisionGraphStepPhase2Enum.Internal] = order1.zipWithIndex.map { (e, i) =>
@@ -279,8 +282,10 @@ def mergeHypergraphsUsingAlignmentPhase2(
     .map(e => AlignmentHyperedge(e.head.verticesIterator.toSet ++ e.last.verticesIterator.toSet))
     .foldLeft(Hypergraph.empty[EdgeLabel, TokenRange])(_ + _)
   // FIXME: Should not require asInstanceOf[]
-  val newMatchesAndTransposedHypergraph = 
-    newTransposedMatches.flatten.foldLeft(newMatchesHypergraph)((y, x) => y + x.asInstanceOf[Hypergraph[EdgeLabel, TokenRange]])
+  val newMatchesAndTransposedHypergraph =
+    newTransposedMatches.flatten.foldLeft(newMatchesHypergraph)((y, x) =>
+      y + x.asInstanceOf[Hypergraph[EdgeLabel, TokenRange]]
+    )
   val result = unmatchedHyperedges.foldLeft(newMatchesAndTransposedHypergraph)((y, x) => y + x)
   result
 

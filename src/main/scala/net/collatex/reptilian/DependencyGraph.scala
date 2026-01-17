@@ -1,6 +1,7 @@
 package net.collatex.reptilian
 
 import net.collatex.reptilian.TokenEnum.TokenSep
+import net.collatex.util.Hypergraph.Hyperedge
 import net.collatex.util.{Graph, Hypergraph}
 
 import scala.collection.immutable.TreeMap
@@ -98,7 +99,7 @@ object DependencyGraph:
   def apply(hg: Hypergraph[EdgeLabel, TokenRange]): Graph[NodeType] =
     val gTa = hg.verticesIterator.next.ta
     val egTa: TokenArrayWithStartsAndEnds = TokenArrayWithStartsAndEnds(gTa)
-    val startsWithHg = Hypergraph.hyperedge(EdgeLabel("starts"), egTa.starts: _*) + hg
+    val startsWithHg = Hypergraph.hyperedge(EdgeLabel("starts"), egTa.starts*) + hg
     // Sorted map (treemap) from start of token range (Int) to hyperedge label (String)
     def createTreeMap(hg: Hypergraph[EdgeLabel, TokenRange]): TreeMap[Int, EdgeLabel] =
       val result = hg.
@@ -108,28 +109,27 @@ object DependencyGraph:
         .to(TreeMap)
       result
 
-    val tm = createTreeMap(Hypergraph.hyperedge(EdgeLabel("ends"), egTa.ends: _*) + hg)
-    def computeEdgeData(tokr: TokenRange, he: EdgeLabel): EdgeData =
-      val witness = he match {
+    val tm = createTreeMap(Hypergraph.hyperedge(EdgeLabel("ends"), egTa.ends*) + hg)
+    def computeEdgeData(tokr: TokenRange, he: Hyperedge[EdgeLabel, TokenRange]): EdgeData =
+      val witness = he.label match {
         case _: EdgeLabel.Terminal => egTa.tokens(tokr.start + 1).w
         case _: EdgeLabel.Internal => egTa.tokens(tokr.start).w
       }
       val source = NodeType(tokr.start)
       val tmTarget = tm.minAfter(tokr.start + 1)
       val tmp = tmTarget.get._2
-      val edge = EdgeEndpoints(NodeType(he), NodeType(tmp))
-      EdgeData(he, witness, tokr, source, tmTarget, edge)
+      val edge = EdgeEndpoints(NodeType(he.label), NodeType(tmp))
+      EdgeData(he.label, witness, tokr, source, tmTarget, edge)
 
-    def computeRowDatas(hes: Set[EdgeLabel]): Seq[Seq[EdgeData]] =
-      val sortedHes = hes.toSeq.sorted
+    def computeRowDatas(hes: Set[Hyperedge[EdgeLabel, TokenRange]]): Seq[Seq[EdgeData]] =
+      val sortedHes = hes.toSeq.sortBy(_.label)
       val rds: Seq[Seq[EdgeData]] = for he <- sortedHes yield
-        // FIXME: Replace deprecated methods with current code
-        val tokrs = startsWithHg.members(he).toSeq.sortBy(e => e.start) // egTa is already ordered
+        val tokrs = he.verticesIterator.toSeq.sortBy(e => e.start) // egTa is already ordered
         tokrs.map(e => computeEdgeData(e, he))
       rds
 
     // Used to create html table and again to computes edges for graph and GraphViz
-    val rowDatas: Seq[Seq[EdgeData]] = computeRowDatas(startsWithHg.hyperedgeLabels)
+    val rowDatas: Seq[Seq[EdgeData]] = computeRowDatas(startsWithHg.hyperedges)
     val depGraph = rowDatas
       .flatMap(_.map(_.edge).distinct)
       .map(e => Graph.edge(e.source, e.target))

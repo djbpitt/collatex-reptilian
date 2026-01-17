@@ -4,7 +4,6 @@ import scala.annotation.{tailrec, unused}
 import scala.xml.{Elem, NodeSeq, Unparsed}
 import math.Ordered.orderingToOrdered
 import net.collatex.reptilian.display.TextWidth
-import net.collatex.reptilian.display.TextWidth.FontStack
 
 import java.awt.Font
 
@@ -323,7 +322,6 @@ def createHorizontalRibbons(
   val gTaSigla = displaySigla.indices.toList
   val env = buildRibbonFontEnv(fonts)
   val ribbonHeightPx = env.ribbonHeightPx
-  val measurers = env.measurers
 
   // val missingTop = allSigla.size * ribbonHeightPx * 2 + ribbonHeightPx / 2
   val missingTop = gTaSigla.size * ribbonHeightPx * 2 + ribbonHeightPx / 2
@@ -401,7 +399,6 @@ def createHorizontalRibbons(
       font: Option[String],
       hngm: (HorizNodeGroupMember, Int)
   ) =
-    val cls: String = font.map(f => s""" class="$f"""").getOrElse("") // class is a reserved word
     val readingSpan: Elem =
       font match
         case Some(f) => <span class={s"$f"}>{hngm._1.reading}</span>

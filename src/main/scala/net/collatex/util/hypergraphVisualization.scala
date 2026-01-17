@@ -6,18 +6,18 @@ import net.collatex.reptilian.{EdgeLabel, TokenEnum, TokenRange}
   *
   * Sort from lower right to upper left in matrix
   *
-  * @param h:
+  * @param h
   *   Hypergraph
   */
 def hypergraphToText(h: Map[Int, Hypergraph[String, TokenRange]]): Unit =
   val output = h map ((_: Int, x: Hypergraph[String, TokenRange]) =>
-    val lines = x.hyperedgeLabels.toSeq.sorted map (e => s"$e : ${x.members(e)}")
+    val lines = x.hyperedges.toSeq.sortBy(_.label) map (e => s"${e.label} : ${e.verticesIterator.toSeq}")
     lines.mkString("\n")
   )
   output.foreach(println)
 
 /** Stringified sample readings from each hyperedge, alphabetized
-  * @param h:
+  * @param h
   *   Hypergraph[EdgeLabel, TokenRange]
   * @return
   *   String
@@ -30,7 +30,7 @@ def hypergraphToReadings(h: Hypergraph[EdgeLabel, TokenRange]): String =
 
 /** Create Graphviz dot representation of domain-specific graph
   *
-  * @param h:
+  * @param h
   *   Hypergraph
   */
 def hypergraphMapToDot(
@@ -40,20 +40,20 @@ def hypergraphMapToDot(
   val last = "}"
   val middle = (h flatMap ((i: Int, x: Hypergraph[EdgeLabel, TokenRange]) =>
     val ap_id = s"Cluster_$i" // Cluster_8
-    val group_ids = x.hyperedgeLabels
+    val group_ids = x.hyperedges.map(_.label)
       .map(e => s"${ap_id}_$e")
       .toSeq
       .sorted // Cluster_8_1b
-    val group_labels = x.hyperedgeLabels
+    val group_labels = x.hyperedges.map(_.label)
       .map(e => s"Group $e")
       .toSeq
       .sorted // "Group 1b"
     val group_reading_ids = group_ids
       .map(e => e + "_reading")
       .sorted
-    val group_readings = x.hyperedgeLabels.toSeq.sorted
+    val group_readings = x.hyperedges.toSeq.sortBy(_.label)
       .map(e =>
-        val tr = x.members(e).head // representative TokenRange
+        val tr = e.verticesIterator.next // representative TokenRange
         s"\"${tokenArray.slice(tr.start, tr.until).map(_.t).mkString}\""
       )
     val ap_to_group_edges = group_ids

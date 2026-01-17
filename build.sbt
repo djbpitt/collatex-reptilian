@@ -16,7 +16,7 @@ lazy val root = (project in file("."))
     assembly / mainClass := None, // Some("net.collatex.reptilian.manifest"),
     scalacOptions := Seq(
       "-unchecked",
-      // "-deprecation",
+      "-deprecation",
       "-feature",
       "-Wvalue-discard",
       "-Wunused:imports",

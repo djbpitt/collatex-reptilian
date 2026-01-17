@@ -1,7 +1,6 @@
 package net.collatex.reptilian
 
 import net.collatex.reptilian.DecisionGraphStepPhase2Enum.{Internal, Terminal}
-import net.collatex.reptilian.TokenRange.EmptyTokenRange
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.*
 import net.collatex.util.{EdgeLabeledDirectedGraph, Hypergraph, SetOf2}
@@ -61,7 +60,6 @@ class traversalGraphPhaseTwoTest extends AnyFunSuite:
     val w1AsHypergraph = createHypergraphFromSingleton(w1Tokens, GTa)
     val matchesProperties = createMatches(w0AsHypergraph, w1AsHypergraph)
     val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-      matchesProperties.matchDataAsHg,
       matchesProperties.matchesSortedHead.toList,
       matchesProperties.matchesSortedLast.toList
     )
@@ -103,7 +101,6 @@ class traversalGraphPhaseTwoTest extends AnyFunSuite:
     val w1AsHypergraph = createHypergraphFromSingleton(w1Tokens, GTa)
     val matchesProperties = createMatches(w0AsHypergraph, w1AsHypergraph)
     val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-      matchesProperties.matchDataAsHg,
       matchesProperties.matchesSortedHead.toList,
       matchesProperties.matchesSortedLast.toList
     )
@@ -151,7 +148,6 @@ class traversalGraphPhaseTwoTest extends AnyFunSuite:
     val w1AsHypergraph = createHypergraphFromSingleton(w1Tokens, GTa)
     val matchesProperties = createMatches(w0AsHypergraph, w1AsHypergraph)
     val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-      matchesProperties.matchDataAsHg,
       matchesProperties.matchesSortedHead.toList,
       matchesProperties.matchesSortedLast.toList
     )
@@ -200,7 +196,6 @@ class traversalGraphPhaseTwoTest extends AnyFunSuite:
     val w1AsHypergraph = createHypergraphFromSingleton(w1Tokens, GTa)
     val matchesProperties = createMatches(w0AsHypergraph, w1AsHypergraph)
     val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-      matchesProperties.matchDataAsHg,
       matchesProperties.matchesSortedHead.toList,
       matchesProperties.matchesSortedLast.toList
     )
@@ -246,7 +241,6 @@ class traversalGraphPhaseTwoTest extends AnyFunSuite:
     val w1AsHypergraph = createHypergraphFromSingleton(w1Tokens, GTa)
     val matchesProperties = createMatches(w0AsHypergraph, w1AsHypergraph)
     val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-      matchesProperties.matchDataAsHg,
       matchesProperties.matchesSortedHead.toList,
       matchesProperties.matchesSortedLast.toList
     )
@@ -293,7 +287,6 @@ class traversalGraphPhaseTwoTest extends AnyFunSuite:
     val w1AsHypergraph = createHypergraphFromSingleton(w1Tokens, GTa)
     val matchesProperties = createMatches(w0AsHypergraph, w1AsHypergraph)
     val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-      matchesProperties.matchDataAsHg,
       matchesProperties.matchesSortedHead.toList,
       matchesProperties.matchesSortedLast.toList
     )
