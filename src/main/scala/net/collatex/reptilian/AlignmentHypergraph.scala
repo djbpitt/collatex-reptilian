@@ -14,7 +14,8 @@ extension (hg: Hypergraph[EdgeLabel, TokenRange])
     // TODO: Change name "NodeType" because it's a node, not a type
     val dependencyGraph = hg.toDependencyGraph
     // Visualize dependency graph to debug cycles
-    dependencyGraphToDot(dependencyGraph, hg)
+    // See https://github.com/djbpitt/collatex-reptilian/issues/111
+    // dependencyGraphToDot(dependencyGraph, hg)
     // End of debug
     val ranks = dependencyGraph.longestPath
     ranks
