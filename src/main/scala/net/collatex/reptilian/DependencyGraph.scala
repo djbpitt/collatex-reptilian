@@ -99,7 +99,7 @@ object DependencyGraph:
   def apply(hg: Hypergraph[EdgeLabel, TokenRange]): Graph[NodeType] =
     val gTa = hg.verticesIterator.next.ta
     val egTa: TokenArrayWithStartsAndEnds = TokenArrayWithStartsAndEnds(gTa)
-    val startsWithHg = Hypergraph.hyperedge(EdgeLabel("starts"), egTa.starts: _*) + hg
+    val startsWithHg = Hypergraph.hyperedge(EdgeLabel("starts"), egTa.starts*) + hg
     // Sorted map (treemap) from start of token range (Int) to hyperedge label (String)
     def createTreeMap(hg: Hypergraph[EdgeLabel, TokenRange]): TreeMap[Int, EdgeLabel] =
       val result = hg.
@@ -109,7 +109,7 @@ object DependencyGraph:
         .to(TreeMap)
       result
 
-    val tm = createTreeMap(Hypergraph.hyperedge(EdgeLabel("ends"), egTa.ends: _*) + hg)
+    val tm = createTreeMap(Hypergraph.hyperedge(EdgeLabel("ends"), egTa.ends*) + hg)
     def computeEdgeData(tokr: TokenRange, he: Hyperedge[EdgeLabel, TokenRange]): EdgeData =
       val witness = he.label match {
         case _: EdgeLabel.Terminal => egTa.tokens(tokr.start + 1).w

@@ -162,7 +162,7 @@ object WebService extends IOApp {
             .map(_.orNotFound)
         )
       }
-      server <- EmberServerBuilder
+      _ <- EmberServerBuilder
         .default[IO]
         .withHost(ipv4"0.0.0.0")
         .withPort(Port.fromInt(port).getOrElse(throw new RuntimeException("Oops!")))

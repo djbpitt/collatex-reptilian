@@ -147,7 +147,6 @@ def mergeHgHg(
     return bothHypergraphs
 
   val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-    hypergraphAfterSplitting, // != original hypergraph
     matchesProperties.matchesSortedHead.toList,
     matchesProperties.matchesSortedLast.toList
   )
