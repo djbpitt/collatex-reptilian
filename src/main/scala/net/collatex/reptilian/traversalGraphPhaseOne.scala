@@ -34,10 +34,7 @@ def counts[T](s: Seq[T]) = s.groupBy(identity).view.mapValues(_.length)
   */
 case class PathCandidate(path: List[Int], score: Double, skippedBlocks: Set[FullDepthBlock] = Set.empty)
 
-protected def initializeEmptyGraph(blocks: Vector[FullDepthBlock]) =
-  val nodeIdentifiers: Vector[Int] =
-    blocks
-      .map(e => e.instances.head) // Offset in witness 0 is block identifier
+protected def initializeEmptyGraph() =
   val g = EdgeLabeledDirectedGraph.empty[Int, TraversalGraphPhaseOneEdgeProperties]
   g
 
@@ -275,7 +272,7 @@ def createTraversalGraph(
   val startBlock = FullDepthBlock(instances = Vector.fill(witnessCount)(-1), length = 1) // fake first (start) block
   val endBlock = FullDepthBlock(instances = Vector.fill(witnessCount)(endNodeId), length = 1)
   val blocksForGraph = Vector(endBlock) ++ localBlocks ++ Vector(startBlock) // don't care about order
-  val g = initializeEmptyGraph(blocksForGraph)
+  val g = initializeEmptyGraph()
   val blockOrderForWitnesses = computeBlockOrderForWitnesses(blocksForGraph)
   val blockOffsets: Map[Int, ArrayBuffer[Int]] = computeBlockOffsetsInAllWitnesses(blockOrderForWitnesses)
   def edgesVectorToGraph(edgesIn: Vector[EdgeLabeledDirectedGraph[Int, TraversalGraphPhaseOneEdgeProperties]]) =

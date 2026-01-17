@@ -2,7 +2,7 @@ package net.collatex.reptilian
 
 import net.collatex.reptilian.TokenEnum.*
 import net.collatex.util.Hypergraph.Hyperedge
-import net.collatex.util.{EdgeLabeledDirectedGraph, Graph, Hypergraph, SetOf2}
+import net.collatex.util.{EdgeLabeledDirectedGraph, Hypergraph, SetOf2}
 
 import scala.collection.mutable
 import os.Path
@@ -147,7 +147,6 @@ def mergeHgHg(
     return bothHypergraphs
 
   val tg: EdgeLabeledDirectedGraph[DecisionGraphStepPhase2Enum, TraversalEdgeProperties] = traversalGraphPhase2(
-    hypergraphAfterSplitting, // != original hypergraph
     matchesProperties.matchesSortedHead.toList,
     matchesProperties.matchesSortedLast.toList
   )
