@@ -46,3 +46,58 @@
         </section>
     </body>
 </html>
+<!--
+TODO: Modify documentation to describe overriding default logback.xml
+
+Supplying a custom logback.xml to a web application depends largely on how your application is packaged and where
+it is running. Here are the most common methods, ordered from simplest to most flexible.
+
+1. The Classpath Method (Standard)
+
+By default, Logback looks for a file named logback.xml at the root of the classpath.
+
+    * For Maven/Gradle projects: Place the file in `src/main/resources/logback.xml`. (NB: Reptilian uses this method)
+    * How it works: When the project is built into a WAR or JAR, the file is placed in `WEB-INF/classes/`.
+        Logback will detect this automatically upon deployment.
+
+2. External File via System Property (Recommended)
+
+If you want to keep your configuration outside of the compiled artifact (so you can change logging levels without
+rebuilding the code), use the `logback.configurationFile` system property.
+
+You can point to a file on the local file system like this:
+    -Dlogback.configurationFile=/path/to/config/logback.xml
+
+**We think** this will override #1, if both are present (TODO: test override).
+
+Where to set this:
+
+    * Tomcat: Add it to the `CATALINA_OPTS` variable in your setenv.sh or setenv.bat file.
+    * Executable JAR: Pass it as an argument when starting the app:
+        java -Dlogback.configurationFile=/etc/myapp/logback.xml -jar myapp.jar
+
+3. Using web.xml (Legacy/Traditional WAR) (TODO: Are we going to support this?)
+
+For older Servlet-based applications, you can define the location of your Logback configuration using a context
+parameter in your WEB-INF/web.xml.
+
+Note that this often requires the logback-ext-spring library if you are using Spring, or a custom
+ServletContextListener.
+
+    <context-param>
+        <param-name>logbackConfigLocation</param-name>
+        <param-value>/WEB-INF/conf/logback.xml</param-value>
+    </context-param>
+
+Summary Comparison
+
+Method              Best For...                                   Portability
+-====-              -=========-                                   -=========-
+Classpath           Default settings that rarely change.          High (Bundled in WAR/JAR)
+System Property     Environment-specific configs (Dev vs. Prod).  Medium (Requires server config)
+
+If you want Logback to automatically pick up changes to your XML file without restarting the server,
+add `scan="true"` to the configuration tag inside your XML:
+
+<configuration scan="true" scanPeriod="30 seconds">
+-->
