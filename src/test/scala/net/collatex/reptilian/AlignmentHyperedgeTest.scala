@@ -1,10 +1,5 @@
 package net.collatex.reptilian
 
-import net.collatex.reptilian.SplitTokenRangeError.{
-  EmptyTokenRangeError,
-  IllegalSplitValueError,
-  IllegalTokenRangeError
-}
 import net.collatex.reptilian.TokenRange.*
 import net.collatex.util.Hypergraph
 import net.collatex.util.Hypergraph.{FullHypergraph, Hyperedge}
@@ -34,7 +29,7 @@ class AlignmentHyperedgeTest extends AnyFunSuite:
         TokenRange(0, 2, Vector[TokenEnum]())
       )
     )
-    assert(result == result)
+    assert(result == expected)
 
   test("Split hyperedge that is coextensive with block"):
     val expected = he

@@ -36,7 +36,7 @@ object DisplayTestFixtures {
 
 /* Helper functions */
 def cleanTempFile(path: os.Path): Unit =
-  if os.exists(path) then os.remove(path)
+  if os.exists(path) then os.remove(path): Unit
 
 def readXmlFile(path: os.Path): Elem =
   scala.xml.XML.loadFile(path.toIO)

@@ -2,8 +2,7 @@ package net.collatex.reptilian
 
 import net.collatex.reptilian.SplitTokenRangeError.{
   EmptyTokenRangeError,
-  IllegalSplitValueError,
-  IllegalTokenRangeError
+  IllegalSplitValueError
 }
 import net.collatex.reptilian.SplitTokenRangeResult.{BothPopulated, FirstOnlyPopulated, SecondOnlyPopulated}
 import net.collatex.reptilian.TokenEnum.Token

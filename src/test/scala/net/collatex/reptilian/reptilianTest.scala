@@ -62,7 +62,7 @@ class reptilianTest extends AnyFunSuite:
 
                   case Right(witnessData) =>
                     assert(witnessData.length == 2)
-                    System.err.println(s"witnessData: $witnessData")
+                    // System.err.println(s"witnessData: $witnessData")
 
                     val w1Data = witnessData.head
                     assert(w1Data.siglum.value == "A")

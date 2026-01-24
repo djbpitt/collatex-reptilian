@@ -536,6 +536,7 @@ class WitnessDataTest extends AnyFunSuite:
           te match
             case _: TokenSep => acc :+ Vector.empty[Token] // Create empty bucket for new witness
             case t: Token    => acc.updated(acc.size - 1, acc.last :+ t) // Append to last bucket
+            case _          => throw new RuntimeException("Should not happen")
         }
     // 2) Sanity: chunk count must match witness count
     assume(
@@ -576,7 +577,7 @@ class WitnessDataTest extends AnyFunSuite:
   test("buildFromWitnessData() creates correct gTa") {
     // Fixtures
     val inputWd: Seq[WitnessData] = wdsMultiNoColors
-    val (gTa, sigla, colors, fonts) = GtaBuilder
+    val (gTa, _, _, _) = GtaBuilder
       .buildFromWitnessData(inputWd, defaultColors)
       .getOrElse(fail("Unable to build gTa, sigla, colors, fonts for test"))
     val seps = gTa.collect { case sep: TokenEnum.TokenSep => sep }
@@ -606,7 +607,7 @@ class WitnessDataTest extends AnyFunSuite:
       }
     }
     assertGtaChunksPreserve(gTa, inputWd)
-    gTa.sliding(2).zipWithIndex.foreach { case (pair, idx) =>
+    gTa.sliding(2).zipWithIndex.foreach { case (pair, _) =>
       assert(pair.last.g == pair.head.g + 1, "g values are not sequential across entire witness set")
     }
   }

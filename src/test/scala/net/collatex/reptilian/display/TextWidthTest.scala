@@ -3,7 +3,6 @@ package net.collatex.reptilian.display
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.Assertion
 import TextWidth.*
-import TextWidth.Measurer.MissingGlyphStrategy
 
 import java.awt.{Font, GraphicsEnvironment}
 import java.awt.font.{FontRenderContext, TextAttribute, TextLayout}
@@ -93,7 +92,7 @@ class TextWidthTest extends AnyFunSuite {
 
       val candidates = // ranges that are likely to have gaps
         sampleRange(0xe000, 0xf8ff, 113) ++ // PUA
-          sampleRange(0x1f300, 0x1faff, 97) ++ // Misc symbols, pictorgraphs, emoji
+          sampleRange(0x1f300, 0x1faff, 97) ++ // Misc symbols, pictographs, emoji
           sampleRange(0xf0000, 0xffffd, 257) ++ // Supplemental PUA
           sampleRange(0x100000, 0x10fffd, 257) // Supplemental PUA
       candidates.find(cp => !f.canDisplay(cp))
@@ -233,7 +232,7 @@ class TextWidthTest extends AnyFunSuite {
 
     // Our measurers with explicit toggles
     val mOff = TextWidth.Measurer.forFontWithFeatures(font, enableKerning = false, enableLigatures = false)
-    val mOn = TextWidth.Measurer.forFontWithFeatures(font, enableKerning = true, enableLigatures = false)
+    val mOn = TextWidth.Measurer.forFontWithFeatures(font, /*enableKerning = true,*/ enableLigatures = false)
 
     val wOff = mOff(s)
     val wOn = mOn(s)

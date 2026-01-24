@@ -22,6 +22,7 @@ class manifestTest extends AnyFunSuite:
       ManifestData(ManifestSource.Local(localPath), ManifestFormat.Xml)
     )
     val result = resolveManifestString(localPath.toString)
+    assert(result == expected)
 
   /* Test ability to resolve JSON manifest location */
   test("resolveManifestString detects local relative JSON path") {

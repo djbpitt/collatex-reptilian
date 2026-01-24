@@ -40,7 +40,7 @@ class ConfigTest extends AnyFunSuite {
         | - '#00ff00'
         |defaultPort: 8082
         |""".stripMargin
-    System.err.print(yaml)
+    // System.err.print(yaml)
 
     val cfg = decode(yaml)
     val rc = ResolvedConfig.from(cfg)

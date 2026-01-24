@@ -8,7 +8,7 @@ import net.collatex.reptilian.TokenRange.{EmptyTokenRange, LegalTokenRange}
 enum TokenRange:
   case LegalTokenRange(start: Int, until: Int, ta: Vector[TokenEnum])
   case EmptyTokenRange(start: Int, until: Int, ta: Vector[TokenEnum])
-  case IllegalTokenRange(start: Int, until: Int, ta: Vector[TokenEnum])
+  private case IllegalTokenRange(start: Int, until: Int, ta: Vector[TokenEnum])
 
   def start: Int
   def until: Int
@@ -57,8 +57,8 @@ enum TokenRange:
       throw RuntimeException(s"both pre ($pre) and post($post) are illegal")
     if pre.getClass.getSimpleName == "IllegalTokenRange" then throw RuntimeException(s"pre value $pre is illegal")
     if post.getClass.getSimpleName == "IllegalTokenRange" then
-      // println(s"rangeToSplit: $rangeToSplit")
-      // println(s"rangeToSplitAround: $rangeToSplitAround")
+      // System.err.println(s"rangeToSplit: $rangeToSplit")
+      // System.err.println(s"rangeToSplitAround: $rangeToSplitAround")
       throw RuntimeException(s"post value $post is illegal")
     (pre, post)
 
@@ -80,7 +80,7 @@ enum TokenRange:
   def slice(startOffset: Int, untilOffset: Int): Either[SliceTokenRangeError.type, TokenRange] =
     this match
       case _: (IllegalTokenRange | EmptyTokenRange) =>
-        println("tokenRange.slice trying to split illegalTokenRange input")
+        // System.err.println("tokenRange.slice trying to split illegalTokenRange input")
         Left(SliceTokenRangeError)
       case x: LegalTokenRange =>
         if startOffset < 0
@@ -88,7 +88,7 @@ enum TokenRange:
           || startOffset > x.length
           || untilOffset > x.length
         then
-          println(s"tokenRange.slice error with input tr $this, startOffset $startOffset, and untilOffset $untilOffset")
+          // System.err.println(s"tokenRange.slice error with input tr $this, startOffset $startOffset, and untilOffset $untilOffset")
           Left(SliceTokenRangeError)
         else Right(TokenRange(x.start + startOffset, x.start + untilOffset, x.ta))
 
@@ -97,7 +97,7 @@ enum TokenRange:
 
 object TokenRange:
   def apply(start: Int, until: Int, ta: Vector[TokenEnum]): TokenRange = {
-    // println("Calling TokenRange constructor")
+    // System.err.println("Calling TokenRange constructor")
     // if ta.size < 1000 then throw RuntimeException(s"ta = $ta")
     Ordering.Int.compare(start, until) match
       case -1 => LegalTokenRange(start, until, ta)
