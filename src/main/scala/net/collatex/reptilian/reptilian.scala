@@ -3,11 +3,11 @@ package net.collatex.reptilian
 import os.Path
 
 import scala.xml.*
-
 import java.net.{URI, URL}
-
-import ParseArgs._
+import ParseArgs.*
 import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
+
+import scala.collection.immutable.MultiSet
 
 /** Mimic XPath normalize-space()
   *
@@ -63,6 +63,24 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
       System.err.println(e)
 
     case Right((root, gTa, displaySigla, colors, fonts, argMap)) =>
+      if argMap.contains("--debug") then { // Report on missing or duplicate tokens in alignment
+        val rootTokens: MultiSet[Int] =
+          root.children
+            .flatMap(_.asInstanceOf[AlignmentPoint].witnessReadings.flatMap((_, v) => Range(v.start, v.until)))
+            .to(MultiSet)
+        val gValues: Vector[Int] = gTa map {
+          case t: TokenEnum.Token => t.g
+          case _ => -1
+        }
+        val gTaTokens = gValues.to(MultiSet).filter(_ != -1)
+        val duplicateTokens = rootTokens.occurrences.collect {
+          case (item, count) if count > 1 => item
+        }
+        val missingTokens = gTaTokens.occurrences.keySet.filterNot(rootTokens.contains)
+        assert(
+          duplicateTokens.isEmpty && missingTokens.isEmpty,
+          s"Duplicate tokens: $duplicateTokens; missing tokens: $missingTokens")
+      }
       displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
 
 /** Resolves manifest location (input as string) as absolute path (if local) or URL (if remote)
