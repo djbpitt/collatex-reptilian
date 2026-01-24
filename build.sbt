@@ -42,7 +42,7 @@ lazy val root = (project in file("."))
       "net.sf.saxon" % "Saxon-HE" % "12.9",
       "com.lihaoyi" %% "requests" % "0.9.2",
       // Cannot upgrade without substantial reworking
-      "com.networknt" % "json-schema-validator" % "1.5.8",
+      "com.networknt" % "json-schema-validator" % "2.0.1",
       "org.virtuslab" %% "scala-yaml" % "0.3.1",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,

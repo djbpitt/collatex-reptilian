@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters._
 
 // --- Third-party: JSON schema, RNG, Schematron ---
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
-import com.networknt.schema.{JsonSchemaFactory, SpecVersion, ValidationMessage}
+import com.networknt.schema.{SchemaRegistry, SpecificationVersion}
 import com.thaiopensource.datatype.xsd.DatatypeLibraryFactoryImpl
 import com.thaiopensource.util.PropertyMapBuilder
 import com.thaiopensource.validate.{ValidateProperty, ValidationDriver}
@@ -86,10 +86,10 @@ object ManifestValidator {
         try {
           val mapper = new ObjectMapper()
           val jsonNode: JsonNode = mapper.readTree(jsonInput)
-          val schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)
-          val schema = schemaFactory.getSchema(safeSchemaInput)
+          val registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12)
+          val schema = registry.getSchema(safeSchemaInput)
 
-          val validationResult: java.util.Set[ValidationMessage] = schema.validate(jsonNode)
+          val validationResult = schema.validate(jsonNode)
           if (validationResult.isEmpty) Right(true)
           else Left(validationResult.asScala.map(_.getMessage).mkString("\n"))
         } catch {
