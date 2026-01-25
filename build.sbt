@@ -41,8 +41,7 @@ lazy val root = (project in file("."))
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
       "net.sf.saxon" % "Saxon-HE" % "12.9",
       "com.lihaoyi" %% "requests" % "0.9.2",
-      // Cannot upgrade without substantial reworking
-      "com.networknt" % "json-schema-validator" % "2.0.1",
+      "com.networknt" % "json-schema-validator" % "3.0.0",
       "org.virtuslab" %% "scala-yaml" % "0.3.1",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,

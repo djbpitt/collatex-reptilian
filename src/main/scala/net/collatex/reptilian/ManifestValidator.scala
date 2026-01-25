@@ -17,7 +17,7 @@ import org.xml.sax.{ErrorHandler, InputSource, SAXParseException}
 import scala.jdk.CollectionConverters._
 
 // --- Third-party: JSON schema, RNG, Schematron ---
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
+import tools.jackson.databind.{JsonNode, ObjectMapper}
 import com.networknt.schema.{SchemaRegistry, SpecificationVersion}
 import com.thaiopensource.datatype.xsd.DatatypeLibraryFactoryImpl
 import com.thaiopensource.util.PropertyMapBuilder
