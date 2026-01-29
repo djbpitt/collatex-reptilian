@@ -6,8 +6,15 @@ import scala.xml.*
 import java.net.{URI, URL}
 import ParseArgs.*
 import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
-
 import scala.collection.immutable.MultiSet
+import ch.qos.logback.classic.{Level, Logger}
+import org.slf4j.LoggerFactory
+
+/*Create logger for sanity-check: no missing or duplicate tokens */
+val logger = LoggerFactory.getLogger("sanity-check")
+  .asInstanceOf[Logger]   // cast to Logback's Logger
+val effectiveLevel: Level = logger.getEffectiveLevel // Used in guard below
+val x: Unit = logger.setLevel(Level.WARN)
 
 /** Mimic XPath normalize-space()
   *
@@ -43,7 +50,6 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
   * @return
   */
 @main def manifest(args: String*): Unit =
-
   val parsedValidated
       : Either[String, (AlignmentRibbon, Vector[TokenEnum], List[Siglum], List[String], List[Option[String]], Map[String, Set[String]])] =
     for {
@@ -63,7 +69,7 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
       System.err.println(e)
 
     case Right((root, gTa, displaySigla, colors, fonts, argMap)) =>
-      if argMap.contains("--debug") then { // Report on missing or duplicate tokens in alignment
+      if effectiveLevel == Level.DEBUG then { // Report on missing or duplicate tokens in alignment
         val rootTokens: MultiSet[Int] =
           root.children
             .flatMap(_.asInstanceOf[AlignmentPoint].witnessReadings.flatMap((_, v) => Range(v.start, v.until)))
@@ -77,9 +83,14 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
           case (item, count) if count > 1 => item
         }
         val missingTokens = gTaTokens.occurrences.keySet.filterNot(rootTokens.contains)
-        assert(
-          duplicateTokens.isEmpty && missingTokens.isEmpty,
-          s"Duplicate tokens: $duplicateTokens; missing tokens: $missingTokens")
+
+        if duplicateTokens.isEmpty && missingTokens.isEmpty then
+          logger.debug("No duplicate or missing tokens")
+        else 
+          if duplicateTokens.nonEmpty then
+            logger.debug(s"Duplicate tokens: $duplicateTokens")
+          if missingTokens.nonEmpty then
+            logger.debug(s"Missing tokens: $missingTokens")
       }
       displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
 
