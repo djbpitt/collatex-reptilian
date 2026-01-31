@@ -7,8 +7,6 @@ import java.net.{URI, URL}
 import ParseArgs.*
 import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
 
-import ch.qos.logback.classic.Level // Check whether to run sanity check based on logging level
-
 /** Mimic XPath normalize-space()
   *
   *   1. Convert all newlines to space characters
@@ -43,8 +41,10 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
   * @return
   */
 @main def manifest(args: String*): Unit =
-  val parsedValidated
-      : Either[String, (AlignmentRibbon, Vector[TokenEnum], List[Siglum], List[String], List[Option[String]], Map[String, Set[String]])] =
+  val parsedValidated: Either[
+    String,
+    (AlignmentRibbon, Vector[TokenEnum], List[Siglum], List[String], List[Option[String]], Map[String, Set[String]])
+  ] =
     for {
       ResolvedConfig(tokensPerWitnessLimit, tokenPattern, defaultColors, defaultPort) <- loadResolvedConfig()
       // Parse args (two-step unpacking because Scala chokes on one-step version)
@@ -62,9 +62,7 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
       System.err.println(e)
 
     case Right((root, gTa, displaySigla, colors, fonts, argMap)) =>
-      if effectiveLevel == Level.DEBUG then { // Report on missing or duplicate tokens in alignment
-        sanityLogging(root, gTa)
-      }
+      sanityLogging(root, gTa)
       displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
 
 /** Resolves manifest location (input as string) as absolute path (if local) or URL (if remote)
