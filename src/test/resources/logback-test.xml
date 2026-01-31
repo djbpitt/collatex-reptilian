@@ -16,8 +16,6 @@
         <appender-ref ref="LIST" />
     </logger>
 
-    <!-- Root logger configuration -->
-    <root level="DEBUG">
-        <appender-ref ref="LIST" />
-    </root>
+    <!-- Root logger configuration must be empty to avoid duplication -->
+    <root level="DEBUG"/>
 </configuration>
