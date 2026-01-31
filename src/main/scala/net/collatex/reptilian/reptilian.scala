@@ -3,10 +3,8 @@ package net.collatex.reptilian
 import os.Path
 
 import scala.xml.*
-
 import java.net.{URI, URL}
-
-import ParseArgs._
+import ParseArgs.*
 import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
 
 /** Mimic XPath normalize-space()
@@ -43,9 +41,10 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
   * @return
   */
 @main def manifest(args: String*): Unit =
-
-  val parsedValidated
-      : Either[String, (AlignmentRibbon, Vector[TokenEnum], List[Siglum], List[String], List[Option[String]], Map[String, Set[String]])] =
+  val parsedValidated: Either[
+    String,
+    (AlignmentRibbon, Vector[TokenEnum], List[Siglum], List[String], List[Option[String]], Map[String, Set[String]])
+  ] =
     for {
       ResolvedConfig(tokensPerWitnessLimit, tokenPattern, defaultColors, defaultPort) <- loadResolvedConfig()
       // Parse args (two-step unpacking because Scala chokes on one-step version)
@@ -63,6 +62,7 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
       System.err.println(e)
 
     case Right((root, gTa, displaySigla, colors, fonts, argMap)) =>
+      sanityLogging(root, gTa)
       displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
 
 /** Resolves manifest location (input as string) as absolute path (if local) or URL (if remote)
