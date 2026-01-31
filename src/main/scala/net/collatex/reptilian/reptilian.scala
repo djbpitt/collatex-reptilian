@@ -6,15 +6,8 @@ import scala.xml.*
 import java.net.{URI, URL}
 import ParseArgs.*
 import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
-import scala.collection.immutable.MultiSet
-import ch.qos.logback.classic.{Level, Logger}
-import org.slf4j.LoggerFactory
 
-/*Create logger for sanity-check: no missing or duplicate tokens */
-val logger = LoggerFactory.getLogger("sanity-check")
-  .asInstanceOf[Logger]   // cast to Logback's Logger
-val effectiveLevel: Level = logger.getEffectiveLevel // Used in guard below
-val x: Unit = logger.setLevel(Level.WARN)
+import ch.qos.logback.classic.Level // Check whether to run sanity check based on logging level
 
 /** Mimic XPath normalize-space()
   *
@@ -70,27 +63,7 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
 
     case Right((root, gTa, displaySigla, colors, fonts, argMap)) =>
       if effectiveLevel == Level.DEBUG then { // Report on missing or duplicate tokens in alignment
-        val rootTokens: MultiSet[Int] =
-          root.children
-            .flatMap(_.asInstanceOf[AlignmentPoint].witnessReadings.flatMap((_, v) => Range(v.start, v.until)))
-            .to(MultiSet)
-        val gValues: Vector[Int] = gTa map {
-          case t: TokenEnum.Token => t.g
-          case _ => -1
-        }
-        val gTaTokens = gValues.to(MultiSet).filter(_ != -1)
-        val duplicateTokens = rootTokens.occurrences.collect {
-          case (item, count) if count > 1 => item
-        }
-        val missingTokens = gTaTokens.occurrences.keySet.filterNot(rootTokens.contains)
-
-        if duplicateTokens.isEmpty && missingTokens.isEmpty then
-          logger.debug("No duplicate or missing tokens")
-        else 
-          if duplicateTokens.nonEmpty then
-            logger.debug(s"Duplicate tokens: $duplicateTokens")
-          if missingTokens.nonEmpty then
-            logger.debug(s"Missing tokens: $missingTokens")
+        sanityLogging(root, gTa)
       }
       displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
 
