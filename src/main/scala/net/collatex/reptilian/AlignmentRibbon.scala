@@ -1,5 +1,6 @@
 package net.collatex.reptilian
 
+import fs2.Pure
 import net.collatex.reptilian.TokenEnum.{Token, TokenSep}
 import net.collatex.reptilian.TokenRange.*
 
@@ -109,4 +110,8 @@ object AlignmentPoint {
   */
 final case class AlignmentRibbon(
     children: ListBuffer[AlignmentUnit] = ListBuffer.empty
-) extends AlignmentUnit
+) extends AlignmentUnit:
+  def streamChildren: fs2.Stream[Pure, AlignmentPoint] = {
+    val aps: Seq[AlignmentPoint] = this.children.map(_.asInstanceOf[AlignmentPoint]).toSeq
+    fs2.Stream.emits(aps)
+  }
