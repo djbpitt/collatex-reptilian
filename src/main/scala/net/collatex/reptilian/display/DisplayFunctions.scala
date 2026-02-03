@@ -1,22 +1,16 @@
 package net.collatex.reptilian.display
 
-import net.collatex.reptilian.{
-  AlignmentPoint,
-  AlignmentRibbon,
-  Siglum,
-  TokenEnum,
-  TokenRange,
-  WitId,
-  WitnessReadings,
-  createHorizontalRibbons,
-  createRhineDelta
-}
+import cats.effect.IO
+import fs2.io.file.{Files, Path}
+import fs2.{Pipe, text}
+import net.collatex.reptilian.{AlignmentPoint, AlignmentRibbon, Siglum, TokenEnum, TokenRange, WitId, WitnessReadings, createHorizontalRibbons, createRhineDelta}
 
 import scala.util.Using
 import scala.xml.*
 import scala.xml.dtd.DocType
 import java.nio.file.Paths
 import scala.annotation.{tailrec, unused}
+import scala.collection.mutable.ListBuffer
 
 // JSON output
 import ujson.*
@@ -55,7 +49,9 @@ object DisplayFunctions {
     val htmlExtension = argMap.getOrElse("--html", Set("html")) // default to .html if none specified
     val outputBaseFilename = argMap.getOrElse("--output", Set()) // empty set if none specified
     formats.foreach {
-      case "table" | "table-h" => emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
+      case "table" | "table-h" =>
+        // TODO: Call method to create sink with correct filename extension (if file output)
+        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
       case "table-v"           => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
       case "table-html-h"      => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
       case "table-html-v"      => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
@@ -81,6 +77,34 @@ object DisplayFunctions {
     */
   private def padCell(s: String, width: Int): String =
     s.padTo(width, ' ') // Left-align; pad right with spaces
+
+  private[display] def emitTableHorizontalStream(
+      alignment: AlignmentRibbon,
+      displaySigla: List[Siglum],
+      gTa: Vector[TokenEnum],
+      outputBaseFilename: Set[String]
+  ): Unit =
+    /* Stream alignment points as input */
+    /* NB: This is wrong; we need to rotate first and then stream the rotation */
+    val source = alignment.streamChildren
+    /* Create output sink: stdout or specific filesystem object (full path and filename) */
+    val outputSink: Pipe[IO, String, Unit] =
+      if outputBaseFilename.isEmpty
+      then
+        _.through(text.utf8.encode)
+          .through(fs2.io.stdout)
+      else
+        val filename = outputBaseFilename.head + "-h.txt"
+        val nioPath =
+          Paths
+            .get(filename) // relative path
+            .toAbsolutePath
+            .normalize
+        val path = Path.fromNioPath(nioPath)
+        _.through(text.utf8.encode)
+          .through(Files[IO].writeAll(path))
+    /* Stream from input to output using the source and sink */
+
 
   /** Horizontal plain text table; rows as witnesses, columns as alignment points
     *
@@ -108,7 +132,7 @@ object DisplayFunctions {
   ): Unit =
 
     val allWitIds = displaySigla.indices
-    val table = alignment.children.map { e =>
+    val table: ListBuffer[IndexedSeq[String]] = alignment.children.map { e =>
       allWitIds.map { f =>
         e.asInstanceOf[AlignmentPoint]
           .witnessReadings
