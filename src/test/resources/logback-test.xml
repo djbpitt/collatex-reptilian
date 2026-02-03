@@ -1,7 +1,8 @@
 <configuration>
     <!--
         Logging configuration in tests must have filename logback-test.xml (not logback.xml)
-        LIST appender must be declared inside both <root> and the relevant ("sanity-check") <logger>
+        LIST appender must be declared only inside the relevant ("sanity-check") <logger>, and
+            not in <root>, which would cause entries to be logged twice
     -->
 
     <appender name="LIST" class="ch.qos.logback.core.read.ListAppender"/>
