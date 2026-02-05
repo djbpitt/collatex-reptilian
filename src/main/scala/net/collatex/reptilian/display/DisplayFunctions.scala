@@ -3,13 +3,24 @@ package net.collatex.reptilian.display
 import cats.effect.IO
 import fs2.io.file.{Files, Path}
 import fs2.{Pipe, text}
-import net.collatex.reptilian.{AlignmentPoint, AlignmentRibbon, Siglum, TokenEnum, TokenRange, WitId, WitnessReadings, createHorizontalRibbons, createRhineDelta}
+import net.collatex.reptilian.{
+  AlignmentPoint,
+  AlignmentRibbon,
+  Siglum,
+  TokenEnum,
+  TokenRange,
+  WitId,
+  WitnessReadings,
+  createHorizontalRibbons,
+  createRhineDelta
+}
 
 import scala.util.Using
 import scala.xml.*
 import scala.xml.dtd.DocType
 import java.nio.file.Paths
 import scala.annotation.{tailrec, unused}
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
 
 // JSON output
@@ -52,9 +63,9 @@ object DisplayFunctions {
       case "table" | "table-h" =>
         // TODO: Call method to create sink with correct filename extension (if file output)
         emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
-      case "table-v"           => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
-      case "table-html-h"      => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-      case "table-html-v"      => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+      case "table-v"      => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
+      case "table-html-h" => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+      case "table-html-v" => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
       case "ribbon" =>
         emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
       // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
@@ -86,8 +97,43 @@ object DisplayFunctions {
   ): Unit =
     /* Stream alignment points as input */
     /* NB: This is wrong; we need to rotate first and then stream the rotation */
-    val source = alignment.streamChildren
+    // val source = alignment.streamChildren
     /* Create output sink: stdout or specific filesystem object (full path and filename) */
+    case class StringWithLength(text: String, length: Int)
+    val table: ListBuffer[IndexedSeq[StringWithLength]] = alignment.children.map { e =>
+      displaySigla.indices.map { f => // for each witness create sequence of
+        val s: String = e
+          .asInstanceOf[AlignmentPoint] // confirm that it's an alignment point
+          .witnessReadings // check all witnesses
+          .getOrElse(f, TokenRange(0, 0, gTa)) // fake empty token range for empty cell
+          .tString // get tString value of each witness (including fakes)
+        val l: Int = s.length // get the string length
+        StringWithLength(s, l) // save both string and length
+      }
+    }
+    val maxSiglaWidth: Int = displaySigla.map(_.value.length).max
+    /*
+    Fold over columns from left to right (input is sequence of alignment points)
+    Accumulator contains 3 ordered maps (ListMap) from Siglum to list,
+      one map per output row (that is, per witness); the lists are prepopulated
+      with padded display sigla
+      ListMap is immutable and observes insertion order
+    Compute maximum width for column once per column, while processing that column
+    For each item in column, append padded string to correct list in accumulator
+    At end of fold, each list contains all column entries
+    When ready to stream, prepend padded sigla to rows (lists)
+     */
+    // Prepopulate witness-specific lists with padded display sigla
+    val acc =
+      displaySigla.zipWithIndex.map((s, i) => i -> Vector[String](padCell(s.value, maxSiglaWidth)))
+    val rotated: ListMap[Int, Vector[String]] = table.foldLeft(ListMap.from(acc))((y, x) =>
+      val maxWidth: Int = x.map(_.length).max
+      ListMap.from(x.zipWithIndex.map((t, i) => i -> (y(i) :+ padCell(t.text, maxWidth))))
+    )
+
+    // 2026-02-05: RESUME HERE
+    // rotated is streamable, need to add pipe characters between columns
+
     val outputSink: Pipe[IO, String, Unit] =
       if outputBaseFilename.isEmpty
       then
@@ -104,7 +150,6 @@ object DisplayFunctions {
         _.through(text.utf8.encode)
           .through(Files[IO].writeAll(path))
     /* Stream from input to output using the source and sink */
-
 
   /** Horizontal plain text table; rows as witnesses, columns as alignment points
     *
