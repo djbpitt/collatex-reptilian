@@ -198,6 +198,31 @@ class displayfunctionsTest extends AnyFunSuite:
     assert(actual == expected)
   }
 
+  // NB: Temporary, while developing streamed output
+  test("emitStream") {
+    val gTa = Vector(
+      Token("a ", "a", 0, 0, Map()),
+      Token("b ", "b", 0, 1, Map()),
+      TokenSep("sep0", "sep0", 0, 2),
+      Token("A ", "a", 1, 3, Map()),
+      Token("B ", "b", 1, 4, Map())
+    )
+    val alignment: AlignmentRibbon = AlignmentRibbon(
+      ListBuffer(
+        AlignmentPoint(gTa, 0 -> TokenRange(0, 1, gTa), 1 -> TokenRange(3, 4, gTa)),
+        AlignmentPoint(gTa, 0 -> TokenRange(1, 2, gTa), 1 -> TokenRange(4, 5, gTa))
+      )
+    )
+    displayDispatch(
+      alignment,
+      gTa,
+      displaySigla = List(Siglum("A"), Siglum("B")),
+      displayColors = List.empty,
+      fonts = List.empty,
+      argMap = Map("--format" -> Set("stream"))
+    )
+  }
+
   ignore("emitAlignmentRibbon writes correct HTML to file") {
     val tempDir = os.temp.dir(prefix = "alignment-ribbon-dir-", deleteOnExit = true)
     val outputBase = "alignment-ribbon"

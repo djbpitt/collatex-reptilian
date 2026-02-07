@@ -2,7 +2,7 @@ package net.collatex.reptilian.display
 
 import cats.effect.IO
 import fs2.io.file.{Files, Path}
-import fs2.{Pipe, text}
+import fs2.{Pipe, Pure, text}
 import net.collatex.reptilian.{
   AlignmentPoint,
   AlignmentRibbon,
@@ -14,7 +14,6 @@ import net.collatex.reptilian.{
   createHorizontalRibbons,
   createRhineDelta
 }
-
 import scala.util.Using
 import scala.xml.*
 import scala.xml.dtd.DocType
@@ -55,6 +54,7 @@ object DisplayFunctions {
       fonts: List[Option[String]],
       argMap: Map[String, Set[String]]
   ): Unit =
+    System.err.println("Inside displayDispatch")
     // Default colors are used only when colors are not specified in the XML or JSON manifest
     val formats = argMap.getOrElse("--format", Set("table")) // default to table if none specified
     val htmlExtension = argMap.getOrElse("--html", Set("html")) // default to .html if none specified
@@ -63,6 +63,7 @@ object DisplayFunctions {
       case "table" | "table-h" =>
         // TODO: Call method to create sink with correct filename extension (if file output)
         emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
+      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
       case "table-v"      => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
       case "table-html-h" => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
       case "table-html-v" => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
@@ -130,9 +131,10 @@ object DisplayFunctions {
       val maxWidth: Int = x.map(_.length).max
       ListMap.from(x.zipWithIndex.map((t, i) => i -> (y(i) :+ padCell(t.text, maxWidth))))
     )
-
-    // 2026-02-05: RESUME HERE
-    // rotated is streamable, need to add pipe characters between columns
+    val x = rotated.values.map(o => fs2.Stream.emit(o)).foldLeft(fs2.Stream.empty[Pure])(_ ++ _)
+    System.err.println("Stream beginning")
+    System.err.println(x.toList)
+    System.err.println("Stream ending")
 
     val outputSink: Pipe[IO, String, Unit] =
       if outputBaseFilename.isEmpty
