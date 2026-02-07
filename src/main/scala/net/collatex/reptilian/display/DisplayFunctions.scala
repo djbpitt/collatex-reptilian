@@ -2,18 +2,9 @@ package net.collatex.reptilian.display
 
 import cats.effect.IO
 import fs2.io.file.{Files, Path}
-import fs2.{Pipe, Pure, text}
-import net.collatex.reptilian.{
-  AlignmentPoint,
-  AlignmentRibbon,
-  Siglum,
-  TokenEnum,
-  TokenRange,
-  WitId,
-  WitnessReadings,
-  createHorizontalRibbons,
-  createRhineDelta
-}
+import fs2.{Pipe, text}
+import net.collatex.reptilian.{AlignmentPoint, AlignmentRibbon, Siglum, TokenEnum, TokenRange, WitId, WitnessReadings, createHorizontalRibbons, createRhineDelta}
+
 import scala.util.Using
 import scala.xml.*
 import scala.xml.dtd.DocType
@@ -153,9 +144,11 @@ object DisplayFunctions {
       .intersperse(fs2.Stream("\n")) // insert newline separator between outer streams (between rows)
       .flatten // flatten nested streams into single stream of strings, some of which are separators (pipe or newline)
 
-    System.err.println("Stream beginning")
-    System.err.println(result.toList)
-    System.err.println("Stream ending")
+    result.through(outputSink).compile.drain // .unsafeRunSync()
+
+//    System.err.println("Stream beginning")
+//    System.err.println(result.toList)
+//    System.err.println("Stream ending")
 
   /** Horizontal plain text table; rows as witnesses, columns as alignment points
     *
