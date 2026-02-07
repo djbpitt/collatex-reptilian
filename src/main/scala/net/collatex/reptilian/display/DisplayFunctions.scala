@@ -143,13 +143,15 @@ object DisplayFunctions {
       val maxWidth: Int = x.map(_.length).max
       ListMap.from(x.zipWithIndex.map((t, i) => i -> (y(i) :+ padCell(t.text, maxWidth))))
     )
-    val x: fs2.Stream[Pure, String] = rotated.values // Iterable of vectors of strings, one inner vector per row
-      .map(row => fs2.Stream.emits(row).intersperse(" | ")) // iterable of streams of strings, one stream for each row
-      .foldLeft(fs2.Stream.empty[Pure])(_ ++ _)
-      //.intersperse("\n")
+    val x: fs2.Stream[Pure, Vector[String]] =
+      fs2.Stream.emits(rotated.values.toSeq) // Stream of vectors of strings, one inner vector per row
+    val y: fs2.Stream[Pure, fs2.Stream[Pure, String]] = x
+      .map(row => fs2.Stream.emits(row).intersperse(" | "))
+      .intersperse(fs2.Stream("\n"))
+    val z = y.flatten
 
     System.err.println("Stream beginning")
-    System.err.println(x.toList)
+    System.err.println(z.toList)
     System.err.println("Stream ending")
 
   /** Horizontal plain text table; rows as witnesses, columns as alignment points
