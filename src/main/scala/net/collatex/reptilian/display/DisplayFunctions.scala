@@ -1,10 +1,20 @@
 package net.collatex.reptilian.display
 
 import cats.effect.IO
+import cats.syntax.all.*
 import fs2.io.file.{Files, Path}
-import fs2.{Pipe, text}
-import net.collatex.reptilian.{AlignmentPoint, AlignmentRibbon, Siglum, TokenEnum, TokenRange, WitId, WitnessReadings, createHorizontalRibbons, createRhineDelta}
-
+import fs2.{Pipe, text, Stream}
+import net.collatex.reptilian.{
+  AlignmentPoint,
+  AlignmentRibbon,
+  Siglum,
+  TokenEnum,
+  TokenRange,
+  WitId,
+  WitnessReadings,
+  createHorizontalRibbons,
+  createRhineDelta
+}
 import scala.util.Using
 import scala.xml.*
 import scala.xml.dtd.DocType
@@ -44,29 +54,30 @@ object DisplayFunctions {
       displayColors: List[String],
       fonts: List[Option[String]],
       argMap: Map[String, Set[String]]
-  ): Unit =
-    System.err.println("Inside displayDispatch")
+  ): IO[Unit] =
     // Default colors are used only when colors are not specified in the XML or JSON manifest
-    val formats = argMap.getOrElse("--format", Set("table")) // default to table if none specified
+    // NB: Temporarily set "stream" as default
+    val formats = argMap.getOrElse("--format", Set("stream")) // default to table if none specified
     val htmlExtension = argMap.getOrElse("--html", Set("html")) // default to .html if none specified
     val outputBaseFilename = argMap.getOrElse("--output", Set()) // empty set if none specified
-    formats.foreach {
-      case "table" | "table-h" =>
-        // TODO: Call method to create sink with correct filename extension (if file output)
-        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
-      case "stream"       => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
-      case "table-v"      => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
-      case "table-html-h" => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-      case "table-html-v" => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-      case "ribbon" =>
-        emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
-      // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
-      case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename)
-      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true)
-      case "json"     => emitJson(root, displaySigla, outputBaseFilename)
-      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename)
-      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename)
-      case "xml"      => emitXml(root, displaySigla, outputBaseFilename)
+    formats.toList.traverse_ {
+//      case "table" | "table-h" =>
+//        // TODO: Call method to create sink with correct filename extension (if file output)
+//        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
+      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
+//      case "table-v"      => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
+//      case "table-html-h" => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+//      case "table-html-v" => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+//      case "ribbon" =>
+//        emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
+//      // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
+//      case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename)
+//      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true)
+//      case "json"     => emitJson(root, displaySigla, outputBaseFilename)
+//      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename)
+//      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename)
+//      case "xml"      => emitXml(root, displaySigla, outputBaseFilename)
+      case other => IO.raiseError(new IllegalArgumentException(s"Unknown format: $other"))
     }
 
   /** Helper function (pads right with spaces) for plain text table output
@@ -86,23 +97,16 @@ object DisplayFunctions {
       displaySigla: List[Siglum],
       gTa: Vector[TokenEnum],
       outputBaseFilename: Set[String]
-  ): Unit =
+  ): IO[Unit] =
     /* Create output sink: stdout or specific filesystem object (full path and filename) */
-    val outputSink: Pipe[IO, String, Unit] =
-      if outputBaseFilename.isEmpty
-      then
-        _.through(text.utf8.encode)
-          .through(fs2.io.stdout)
+    // A sink for BYTES (stdout or file)
+    val byteSink: Pipe[IO, Byte, Nothing] =
+      if outputBaseFilename.isEmpty then fs2.io.stdout[IO]
       else
         val filename = outputBaseFilename.head + "-h.txt"
-        val nioPath =
-          Paths
-            .get(filename) // relative path
-            .toAbsolutePath
-            .normalize
+        val nioPath = Paths.get(filename).toAbsolutePath.normalize
         val path = Path.fromNioPath(nioPath)
-        _.through(text.utf8.encode)
-          .through(Files[IO].writeAll(path))
+        Files[IO].writeAll(path)
     case class StringWithLength(text: String, length: Int)
     val table: ListBuffer[IndexedSeq[StringWithLength]] = alignment.children.map { e =>
       displaySigla.indices.map { f => // for each witness create sequence of
@@ -134,21 +138,29 @@ object DisplayFunctions {
       val maxWidth: Int = x.map(_.length).max
       ListMap.from(x.zipWithIndex.map((t, i) => i -> (y(i) :+ padCell(t.text, maxWidth))))
     )
-    val result = fs2.Stream // Create stream ...
-      .emits( // emits instead of emit to make each row a separate stream item (emit would create one-item stream)
-        rotated.values.toSeq
-      ) // ingest sequence of vectors (one per row) of strings (one per cell) and return stream of vectors of strings
-      .map(row =>
-        fs2.Stream.emits(row).intersperse(" | ")
-      ) // for each inner vector of strings, create stream of strings with pipe separators
-      .intersperse(fs2.Stream("\n")) // insert newline separator between outer streams (between rows)
-      .flatten // flatten nested streams into single stream of strings, some of which are separators (pipe or newline)
-
-    result.through(outputSink).compile.drain // .unsafeRunSync()
-
-//    System.err.println("Stream beginning")
-//    System.err.println(result.toList)
-//    System.err.println("Stream ending")
+//    val result: Stream[IO, String] =
+//      Stream
+//        .emits(rotated.values.toSeq)
+//        .map(row => Stream.emits(row).intersperse(" | "))
+//        .intersperse(Stream("\n"))
+//        .flatten
+//        .covary[IO]
+//
+//    result
+//      .through(fs2.text.utf8.encode) // String -> Byte (once)
+//      .through(byteSink) // Byte -> (sink)
+//      .compile
+//      .drain
+    Stream
+      .emits(rotated.values.toSeq)
+      .map(row => Stream.emits(row).intersperse(" | "))
+      .intersperse(Stream("\n"))
+      .flatten
+      .covary[IO] // Source was pure, this makes output effectful
+      .through(fs2.text.utf8.encode) // String -> Byte (once)
+      .through(byteSink) // Byte -> (sink)
+      .compile
+      .drain
 
   /** Horizontal plain text table; rows as witnesses, columns as alignment points
     *

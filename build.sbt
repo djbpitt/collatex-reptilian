@@ -38,6 +38,7 @@ lazy val root = (project in file("."))
       "io.github.pityka" %% "pairwisealignment" % "2.2.7",
       "de.sciss" %% "linkernighantsp" % "0.1.3",
       "org.typelevel" %% "cats-core" % "2.13.0",
+      "org.typelevel" %% "cats-effect-testing-scalatest" % "1.7.0" % Test,
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
       "net.sf.saxon" % "Saxon-HE" % "12.9",
       "com.lihaoyi" %% "requests" % "0.9.2",
