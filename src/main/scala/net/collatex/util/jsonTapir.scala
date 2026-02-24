@@ -28,8 +28,8 @@ object Book:
   val newEndpoint: ServerEndpoint[Any, shared.Identity] = endpoint.post
     .in("hello" / "world")
     .in(bookBody)
-    .out(stringBody)
-    .handleSuccess(book => s"Hello, $book!")
+    .out(bookBody)
+    .handleSuccess(book => Book(book.author, title="Different title", book.year))
 
   NettySyncServer()
     .port(8082)
