@@ -7,5 +7,6 @@ import sttp.tapir.*
   val helloWorldEndpoint = endpoint
     .get
     .in("hello" / "world")
+    .in(query[String]("name"))
 
   println(helloWorldEndpoint.show)
