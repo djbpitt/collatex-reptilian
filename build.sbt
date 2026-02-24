@@ -50,7 +50,8 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       "ch.qos.logback" % "logback-classic" % "1.5.32",
       "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.13.8",
-      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.13.8"
+      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.13.8",
+      "com.softwaremill.sttp.tapir" %% "tapir-json-upickle" % "1.13.8"
     ),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "services", _ @_*) => MergeStrategy.concat
