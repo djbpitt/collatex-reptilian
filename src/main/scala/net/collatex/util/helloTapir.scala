@@ -4,6 +4,7 @@ package net.collatex.util
 import sttp.shared
 import sttp.tapir.*
 import sttp.tapir.server.ServerEndpoint
+import sttp.tapir.server.netty.sync.NettySyncServer
 
 @main def helloWorldTapir(): Unit =
   val helloWorldEndpoint: ServerEndpoint[Any, shared.Identity] = endpoint.get
@@ -12,4 +13,10 @@ import sttp.tapir.server.ServerEndpoint
     .out(stringBody)
     .handleSuccess(name => s"Hello, $name!")
 
-  println(helloWorldEndpoint.show)
+  NettySyncServer()
+    .port(8082)
+    .addEndpoint(helloWorldEndpoint)
+    .startAndWait()
+
+  // http://localhost:8082/hello/world?name=%22ronald%22
+  // println(helloWorldEndpoint.show)
