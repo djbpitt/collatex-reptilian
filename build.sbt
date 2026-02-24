@@ -28,9 +28,9 @@ lazy val root = (project in file("."))
     ),
     libraryDependencies ++= Seq(
       "org.relaxng" % "jing" % "20241231",
-      "com.lihaoyi" %% "os-lib" % "0.11.6",
-      "com.lihaoyi" %% "upickle" % "4.4.2",
-      "com.github.haifengl" %% "smile-scala" % "5.1.0",
+      "com.lihaoyi" %% "os-lib" % "0.11.8",
+      "com.lihaoyi" %% "upickle" % "4.4.3",
+      "com.github.haifengl" %% "smile-scala" % "5.2.0",
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
       "com.lihaoyi" %% "scalatags" % "0.13.1",
       "de.sciss" %% "fingertree" % "1.5.5",
@@ -40,7 +40,7 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-core" % "2.13.0",
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
       "net.sf.saxon" % "Saxon-HE" % "12.9",
-      "com.lihaoyi" %% "requests" % "0.9.2",
+      "com.lihaoyi" %% "requests" % "0.9.3",
       "com.networknt" % "json-schema-validator" % "3.0.0",
       "org.virtuslab" %% "scala-yaml" % "0.3.1",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
@@ -48,7 +48,9 @@ lazy val root = (project in file("."))
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
-      "ch.qos.logback" % "logback-classic" % "1.5.25"
+      "ch.qos.logback" % "logback-classic" % "1.5.32",
+      "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.13.8",
+      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.13.8"
     ),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "services", _ @_*) => MergeStrategy.concat
