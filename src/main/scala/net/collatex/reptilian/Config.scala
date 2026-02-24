@@ -2,6 +2,7 @@ package net.collatex.reptilian
 
 import org.virtuslab.yaml.*
 
+import scala.io.Source
 import scala.util.Using
 import scala.util.matching.Regex
 
@@ -29,7 +30,7 @@ object ResolvedConfig {
 def loadResolvedConfig(resourceName: String = "config.yaml"): Either[String, ResolvedConfig] =
   // 1) safely read resource (wrap IOException into Left)
   val read: Either[String, String] =
-    try Right(Using.resource(io.Source.fromResource(resourceName))(_.mkString))
+    try Right(Using.resource(Source.fromResource(resourceName))(_.mkString))
     catch case e: Throwable => Left(s"Cannot read $resourceName: ${e.getMessage}")
 
   // 2) decode + resolve in a single for-comprehension
