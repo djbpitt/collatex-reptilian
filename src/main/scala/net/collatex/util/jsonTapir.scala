@@ -10,14 +10,6 @@ import sttp.tapir.server.netty.sync.NettySyncServer
 
 case class Book(author: String, title: String, year: Int)
 
-/*
-{
-  "author" : "Ronald",
-  "title" : "stuff",
-  "year" : 1
-}
-* */
-
 object Book:
   given ReadWriter[Book] = macroRW
 
