@@ -12,10 +12,16 @@ import sttp.tapir.server.netty.sync.NettySyncServer
     .in(query[String]("name"))
     .out(stringBody)
     .handleSuccess(name => s"Hello, $name!")
+  val goodbyeWorldEndpoint = endpoint.get
+    .in("goodbye" / "world")
+    .in(query[String]("name"))
+    .out(stringBody)
+    .handleSuccess(name => s"Goodbye, $name!")
 
   NettySyncServer()
     .port(8082)
     .addEndpoint(helloWorldEndpoint)
+    .addEndpoint(goodbyeWorldEndpoint)
     .startAndWait()
 
   // http://localhost:8082/hello/world?name=%22ronald%22
