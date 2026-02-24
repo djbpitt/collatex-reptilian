@@ -23,13 +23,11 @@ object Book:
 
 @main def jsonTapir(): Unit =
 
-  val bookQuery: EndpointInput.Query[Book] = jsonQuery[Book]("book")
+  val bookBody: EndpointIO[Book] = jsonBody[Book]
 
-  // val bookEndpoint: EndpointIO[Book] = jsonBody[Book]
-
-  val newEndpoint: ServerEndpoint[Any, shared.Identity] = endpoint.get
+  val newEndpoint: ServerEndpoint[Any, shared.Identity] = endpoint.post
     .in("hello" / "world")
-    .in(bookQuery)
+    .in(bookBody)
     .out(stringBody)
     .handleSuccess(book => s"Hello, $book!")
 
@@ -39,10 +37,20 @@ object Book:
     .startAndWait()
 
 /*
+  curl -X POST
+  -v
+  -d @/Users/djb/IdeaProjects/collatex-reptilian/src/main/resources/sampleBook.json http://localhost:8082/hello/world
+
+  For GET, use, change method in newEndpoint to get
+  and in() value as bookQuery, defined as
+  val bookQuery: EndpointInput.Query[Book] = jsonQuery[Book]("book")
+  and use:
+
   curl
   -G
   -v
   --data-urlencode
   book@/Users/djb/IdeaProjects/collatex-reptilian/src/main/resources/sampleBook.json
   http://localhost:8082/hello/world
+
 * */
