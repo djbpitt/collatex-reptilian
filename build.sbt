@@ -1,5 +1,6 @@
-val http4sVersion = "1.0.0-M46"
+val http4sVersion = "0.23.33"
 val log4catsVersion = "2.7.1"
+val tapirVersion = "1.13.9"
 lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
@@ -49,9 +50,14 @@ lazy val root = (project in file("."))
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       "ch.qos.logback" % "logback-classic" % "1.5.32",
-      "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.13.8",
-      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.13.8",
-      "com.softwaremill.sttp.tapir" %% "tapir-json-upickle" % "1.13.8"
+      "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-json-upickle" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-cats-effect" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-cats-effect" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion, // Or your preferred server
+      "co.fs2" %% "fs2-core" % "3.12.2"
     ),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "services", _ @_*) => MergeStrategy.concat
