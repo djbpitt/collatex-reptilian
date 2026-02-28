@@ -55,7 +55,7 @@ def getXmlStream: fs2.Stream[fs2.Pure, Byte] =
   NettySyncServer()
     .port(8082)
     .addEndpoint(newEndpoint)
-    .addEndpoint(xmlEndpoint)
+    // .addEndpoint(xmlEndpoint)
     .startAndWait()
 
 /*
