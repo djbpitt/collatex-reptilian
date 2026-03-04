@@ -38,17 +38,17 @@ class AlignmentRibbonTest extends AnyFunSuite:
     val result = ar.flowifyChildren
     assert(result.runToList() == expected.runToList())
   }
-//  test("Non-empty alignment ribbon emits populated ox flow") {
-//    val gTa = Vector[TokenEnum]()
-//    val aps: List[AlignmentPoint] = List(
-//      AlignmentPoint(gTa, Map(0 -> TokenRange(0, 1, gTa))),
-//      AlignmentPoint(gTa, Map(0 -> TokenRange(1, 2, gTa))),
-//      AlignmentPoint(gTa, Map(0 -> TokenRange(2, 3, gTa)))
-//    )
-//    val ar: AlignmentRibbon = AlignmentRibbon(
-//      ListBuffer.from(aps)
-//    )
-//    val expected: Stream[Pure, AlignmentPoint] = Stream.emits(aps)
-//    val result: Stream[Pure, AlignmentPoint] = ar.streamChildren
-//    assert(result.toList == expected.toList) // Can't compare streams directly
-//  }
+  test("Non-empty alignment ribbon emits populated ox flow") {
+    val gTa = Vector[TokenEnum]()
+    val aps: List[AlignmentPoint] = List(
+      AlignmentPoint(gTa, Map(0 -> TokenRange(0, 1, gTa))),
+      AlignmentPoint(gTa, Map(0 -> TokenRange(1, 2, gTa))),
+      AlignmentPoint(gTa, Map(0 -> TokenRange(2, 3, gTa)))
+    )
+    val ar: AlignmentRibbon = AlignmentRibbon(
+      ListBuffer.from(aps)
+    )
+    val expected: Flow[AlignmentPoint] = Flow.fromIterator(aps.iterator)
+    val result: Flow[AlignmentPoint] = ar.flowifyChildren
+    assert(result.runToList() == expected.runToList()) // Can't compare flows directly
+  }
