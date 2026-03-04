@@ -1,14 +1,15 @@
 package net.collatex.util
 
+import net.collatex.reptilian.{AlignmentPoint, AlignmentRibbon, TokenEnum, TokenRange}
 import ox.*
 import ox.flow.*
-
 import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
 
 import scala.concurrent.duration.*
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
+import scala.collection.mutable.ListBuffer
 
 // ─── Domain ────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,21 @@ def streamingXmlLogic(u: Unit): Either[String, Flow[Chunk[Byte]]] = {
     case t: Throwable => Left(s"Streaming failed: ${t.getMessage}")
   }
 }
+
+// ——— Simulated alignment ribbon to illustrate flow output
+// Input is Alignment Ribbon, output is XML (as flow of strings)
+
+val gTa = Vector[TokenEnum]()
+val aps: List[AlignmentPoint] = List(
+  AlignmentPoint(gTa, Map(0 -> TokenRange(0, 1, gTa))),
+  AlignmentPoint(gTa, Map(0 -> TokenRange(1, 2, gTa))),
+  AlignmentPoint(gTa, Map(0 -> TokenRange(2, 3, gTa)))
+)
+val ar: AlignmentRibbon = AlignmentRibbon(
+  ListBuffer.from(aps)
+)
+
+
 
 // ─── Server ─────────────────────────────────────────────────────────────────
 

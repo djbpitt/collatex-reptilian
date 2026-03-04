@@ -7,6 +7,8 @@ import java.net.{URI, URL}
 import ParseArgs.*
 import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
 import cats.effect.{IO, IOApp}
+import ox.Chunk
+import ox.flow.Flow
 
 /** Mimic XPath normalize-space()
   *
@@ -41,7 +43,7 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
   *   args: location of manifest and optional toggle for debug output
   * @return
   */
-@main def manifest(args: String*): IO[Unit] =
+@main def manifest(args: String*):  Unit =
   val parsedValidated: Either[
     String,
     (AlignmentRibbon, Vector[TokenEnum], List[Siglum], List[String], List[Option[String]], Map[String, Set[String]])
@@ -60,12 +62,15 @@ def retrieveManifestJson(source: ManifestSource): Either[String, String] = {
 
   parsedValidated match
     case Left(e) =>
-      // System.err.println(e)
-      IO.raiseError(new IllegalArgumentException(s"Unknown format: $e"))
+      System.err.println(e)
 
     case Right((root, gTa, displaySigla, colors, fonts, argMap)) =>
       sanityLogging(root, gTa)
-      displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
+      val emitted = displayDispatch(root, gTa, displaySigla, colors, fonts, argMap)
+      emitted match {
+        case Left(e) => System.err.println(e)
+        case Right(b) => b.runToOutputStream(System.out)
+      }
 
 /** Resolves manifest location (input as string) as absolute path (if local) or URL (if remote)
   *

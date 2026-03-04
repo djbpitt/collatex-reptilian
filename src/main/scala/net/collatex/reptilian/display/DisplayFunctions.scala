@@ -3,7 +3,7 @@ package net.collatex.reptilian.display
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.io.file.{Files, Path}
-import fs2.{Pipe, text, Stream}
+import fs2.{Pipe, Stream, text}
 import net.collatex.reptilian.{
   AlignmentPoint,
   AlignmentRibbon,
@@ -15,6 +15,9 @@ import net.collatex.reptilian.{
   createHorizontalRibbons,
   createRhineDelta
 }
+import ox.Chunk
+import ox.flow.{Flow, FlowStage}
+
 import scala.util.Using
 import scala.xml.*
 import scala.xml.dtd.DocType
@@ -54,17 +57,23 @@ object DisplayFunctions {
       displayColors: List[String],
       fonts: List[Option[String]],
       argMap: Map[String, Set[String]]
-  ): IO[Unit] =
+  ): Either[String, Flow[Chunk[Byte]]] =
     // Default colors are used only when colors are not specified in the XML or JSON manifest
     // NB: Temporarily set "stream" as default
     val formats = argMap.getOrElse("--format", Set("stream")) // default to table if none specified
     val htmlExtension = argMap.getOrElse("--html", Set("html")) // default to .html if none specified
     val outputBaseFilename = argMap.getOrElse("--output", Set()) // empty set if none specified
-    formats.toList.traverse_ {
+    /* TODO: Web service and stdout can return only one format, writing to disk can create multiple
+     * Currently match only first specified format; must be amended to accommodate multiples where appropriate
+     * Not yet handling errors in a meaningful way
+     * Not yet treating no specified format as requesting horizontal plain-text table as default
+     * */
+    formats.head match {
 //      case "table" | "table-h" =>
 //        // TODO: Call method to create sink with correct filename extension (if file output)
 //        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
-      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
+//      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
+      case "flow" => emitTableHorizontalFlow(root, displaySigla, gTa, outputBaseFilename)
 //      case "table-v"      => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
 //      case "table-html-h" => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
 //      case "table-html-v" => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
@@ -77,7 +86,7 @@ object DisplayFunctions {
 //      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename)
 //      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename)
 //      case "xml"      => emitXml(root, displaySigla, outputBaseFilename)
-      case other => IO.raiseError(new IllegalArgumentException(s"Unknown format: $other"))
+      case other => Left("Oops!")
     }
 
   /** Helper function (pads right with spaces) for plain text table output
@@ -92,21 +101,12 @@ object DisplayFunctions {
   private def padCell(s: String, width: Int): String =
     s.padTo(width, ' ') // Left-align; pad right with spaces
 
-  private[display] def emitTableHorizontalStream(
+  private[display] def emitTableHorizontalFlow(
       alignment: AlignmentRibbon,
       displaySigla: List[Siglum],
       gTa: Vector[TokenEnum],
       outputBaseFilename: Set[String]
-  ): IO[Unit] =
-    /* Create output sink: stdout or specific filesystem object (full path and filename) */
-    // A sink for BYTES (stdout or file)
-    val byteSink: Pipe[IO, Byte, Nothing] =
-      if outputBaseFilename.isEmpty then fs2.io.stdout[IO]
-      else
-        val filename = outputBaseFilename.head + "-h.txt"
-        val nioPath = Paths.get(filename).toAbsolutePath.normalize
-        val path = Path.fromNioPath(nioPath)
-        Files[IO].writeAll(path)
+  ): Either[String, Flow[Chunk[Byte]]] =
     case class StringWithLength(text: String, length: Int)
     val table: ListBuffer[IndexedSeq[StringWithLength]] = alignment.children.map { e =>
       displaySigla.indices.map { f => // for each witness create sequence of
@@ -120,47 +120,92 @@ object DisplayFunctions {
       }
     }
     val maxSiglaWidth: Int = displaySigla.map(_.value.length).max
-    /*
-    Fold over columns from left to right (input is sequence of alignment points)
-    Accumulator contains 3 ordered maps (ListMap) from Siglum to list,
-      one map per output row (that is, per witness); the lists are prepopulated
-      with padded display sigla
-      ListMap is immutable and observes insertion order
-    Compute maximum width for column once per column, while processing that column
-    For each item in column, append padded string to correct list in accumulator
-    At end of fold, each list contains all column entries
-    When ready to stream, prepend padded sigla to rows (lists)
-     */
-    // Prepopulate witness-specific lists with padded display sigla
     val acc =
       displaySigla.zipWithIndex.map((s, i) => i -> Vector[String](padCell(s.value, maxSiglaWidth)))
     val rotated: ListMap[Int, Vector[String]] = table.foldLeft(ListMap.from(acc))((y, x) =>
       val maxWidth: Int = x.map(_.length).max
       ListMap.from(x.zipWithIndex.map((t, i) => i -> (y(i) :+ padCell(t.text, maxWidth))))
     )
-//    val result: Stream[IO, String] =
-//      Stream
-//        .emits(rotated.values.toSeq)
-//        .map(row => Stream.emits(row).intersperse(" | "))
-//        .intersperse(Stream("\n"))
-//        .flatten
-//        .covary[IO]
-//
-//    result
+    val stringFlow = Flow
+      .fromIterator(
+        rotated.values.toSeq
+          .map(row => Flow.fromIterator(row.iterator).intersperse(" | "))
+          .iterator
+      )
+      .intersperse(Flow.fromValues("\n"))
+      .flatten
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
+
+//  private[display] def emitTableHorizontalStream(
+//      alignment: AlignmentRibbon,
+//      displaySigla: List[Siglum],
+//      gTa: Vector[TokenEnum],
+//      outputBaseFilename: Set[String]
+//  ): IO[Unit] =
+//    /* Create output sink: stdout or specific filesystem object (full path and filename) */
+//    // A sink for BYTES (stdout or file)
+//    val byteSink: Pipe[IO, Byte, Nothing] =
+//      if outputBaseFilename.isEmpty then fs2.io.stdout[IO]
+//      else
+//        val filename = outputBaseFilename.head + "-h.txt"
+//        val nioPath = Paths.get(filename).toAbsolutePath.normalize
+//        val path = Path.fromNioPath(nioPath)
+//        Files[IO].writeAll(path)
+//    case class StringWithLength(text: String, length: Int)
+//    val table: ListBuffer[IndexedSeq[StringWithLength]] = alignment.children.map { e =>
+//      displaySigla.indices.map { f => // for each witness create sequence of
+//        val s: String = e
+//          .asInstanceOf[AlignmentPoint] // confirm that it's an alignment point
+//          .witnessReadings // check all witnesses
+//          .getOrElse(f, TokenRange(0, 0, gTa)) // fake empty token range for empty cell
+//          .tString // get tString value of each witness (including fakes)
+//        val l: Int = s.length // get the string length
+//        StringWithLength(s, l) // save both string and length
+//      }
+//    }
+//    val maxSiglaWidth: Int = displaySigla.map(_.value.length).max
+//    /*
+//    Fold over columns from left to right (input is sequence of alignment points)
+//    Accumulator contains 3 ordered maps (ListMap) from Siglum to list,
+//      one map per output row (that is, per witness); the lists are prepopulated
+//      with padded display sigla
+//      ListMap is immutable and observes insertion order
+//    Compute maximum width for column once per column, while processing that column
+//    For each item in column, append padded string to correct list in accumulator
+//    At end of fold, each list contains all column entries
+//    When ready to stream, prepend padded sigla to rows (lists)
+//     */
+//    // Prepopulate witness-specific lists with padded display sigla
+//    val acc =
+//      displaySigla.zipWithIndex.map((s, i) => i -> Vector[String](padCell(s.value, maxSiglaWidth)))
+//    val rotated: ListMap[Int, Vector[String]] = table.foldLeft(ListMap.from(acc))((y, x) =>
+//      val maxWidth: Int = x.map(_.length).max
+//      ListMap.from(x.zipWithIndex.map((t, i) => i -> (y(i) :+ padCell(t.text, maxWidth))))
+//    )
+////    val result: Stream[IO, String] =
+////      Stream
+////        .emits(rotated.values.toSeq)
+////        .map(row => Stream.emits(row).intersperse(" | "))
+////        .intersperse(Stream("\n"))
+////        .flatten
+////        .covary[IO]
+////
+////    result
+////      .through(fs2.text.utf8.encode) // String -> Byte (once)
+////      .through(byteSink) // Byte -> (sink)
+////      .compile
+////      .drain
+//    Stream
+//      .emits(rotated.values.toSeq)
+//      .map(row => Stream.emits(row).intersperse(" | "))
+//      .intersperse(Stream("\n"))
+//      .flatten
+//      .covary[IO] // Source was pure, this makes output effectful
 //      .through(fs2.text.utf8.encode) // String -> Byte (once)
 //      .through(byteSink) // Byte -> (sink)
 //      .compile
 //      .drain
-    Stream
-      .emits(rotated.values.toSeq)
-      .map(row => Stream.emits(row).intersperse(" | "))
-      .intersperse(Stream("\n"))
-      .flatten
-      .covary[IO] // Source was pure, this makes output effectful
-      .through(fs2.text.utf8.encode) // String -> Byte (once)
-      .through(byteSink) // Byte -> (sink)
-      .compile
-      .drain
 
   /** Horizontal plain text table; rows as witnesses, columns as alignment points
     *

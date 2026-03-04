@@ -115,7 +115,8 @@ object ParseArgs {
             "svg-rich",
             "graphml",
             "tei",
-            "xml"
+            "xml",
+            "flow"
           )
           val allowedFormatsSet = allowedFormatsList.toSet
           val allowedHtml = Set("html", "xhtml")
