@@ -3,6 +3,7 @@ package net.collatex.reptilian
 import fs2.Pure
 import net.collatex.reptilian.TokenEnum.{Token, TokenSep}
 import net.collatex.reptilian.TokenRange.*
+import ox.flow.Flow
 
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
@@ -111,7 +112,10 @@ object AlignmentPoint {
 final case class AlignmentRibbon(
     children: ListBuffer[AlignmentUnit] = ListBuffer.empty
 ) extends AlignmentUnit:
-  def streamChildren: fs2.Stream[Pure, AlignmentPoint] = {
+  def streamChildren: fs2.Stream[Pure, AlignmentPoint] = 
     val aps: Seq[AlignmentPoint] = this.children.map(_.asInstanceOf[AlignmentPoint]).toSeq
     fs2.Stream.emits(aps)
-  }
+  def flowifyChildren: Flow[AlignmentPoint] =
+    Flow.fromIterator(Iterator.from(this.children.map(_.asInstanceOf[AlignmentPoint])))
+
+    

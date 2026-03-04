@@ -37,6 +37,7 @@ val xmlHeader =
 val xmlFooter = "\n</products>\n"
 
 // ─── Data Source (simulated slow database / external API) ──────────────────
+// Creates input (e.g., flow of alignment points before visualization is emitted)
 
 def fetchProducts(): Flow[Product] =
   Flow
@@ -54,6 +55,7 @@ def fetchProducts(): Flow[Product] =
 
 // ─── Tapir Endpoint ────────────────────────────────────────────────────────
 
+// Declarative (API) connection of input and output; does not do the work
 val streamingXmlEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
   endpoint.get
     .in("products" / "stream" / "xml")
@@ -61,7 +63,9 @@ val streamingXmlEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStre
     // .outHeader(HeaderNames.CacheControl, "no-cache")
     .errorOut(stringBody)
 
-def streamingXmlLogic(u: Unit)(using Ox): Either[String, Flow[Chunk[Byte]]] = {
+// Implementation of the API; these are connected in runStreamingXmlServer(), below
+// Sample API, with fake "products", has no input data, so u is unused, but in real life it will be
+def streamingXmlLogic(u: Unit): Either[String, Flow[Chunk[Byte]]] = {
   try {
     val stringFlow: Flow[String] = Flow.usingEmit { emit =>
       emit(xmlHeader)
@@ -91,7 +95,7 @@ def streamingXmlLogic(u: Unit)(using Ox): Either[String, Flow[Chunk[Byte]]] = {
       .addEndpoint(
         streamingXmlEndpoint.handle { unitInput =>
           // summon[Ox] provides the scope for the Flow logic
-          streamingXmlLogic(unitInput)(using summon[Ox])
+          streamingXmlLogic(unitInput) // (using summon[Ox])
         }
       )
       .start()
@@ -101,7 +105,7 @@ def streamingXmlLogic(u: Unit)(using Ox): Either[String, Flow[Chunk[Byte]]] = {
     val boundHost = serverBinding.hostName
 
     println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
-    println("Try: curl -N http://localhost:8081/products/stream/xml")
+    println(s"Try: curl -N http://$boundHost:$boundPort/products/stream/xml")
 
     // Keep the supervised scope alive until process termination
     never
