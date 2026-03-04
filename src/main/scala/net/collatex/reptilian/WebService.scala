@@ -1,25 +1,68 @@
-//package net.collatex.reptilian
-//
-//import cats.effect.{ExitCode, IO, IOApp, Resource}
-//import cats.implicits.catsSyntaxEither
-//import cats.syntax.all.*
-//import cats.syntax.traverse.toTraverseOps
-//import com.comcast.ip4s.{Port, ipv4}
-//import net.collatex.reptilian.GtaBuilder.{buildFromWitnessData, jsonToWitnessData}
-//import net.collatex.reptilian.display.DisplayFunctions.displayDispatch
-//import org.http4s.*
-//import org.http4s.headers.`Content-Type`
-//import org.http4s.{DecodeResult, EntityDecoder, InvalidMessageBodyFailure, MediaType}
-//import org.http4s.{Entity, HttpRoutes, Response, Status}
-//import org.http4s.dsl.io.*
-//import org.http4s.ember.server.EmberServerBuilder
-//import org.http4s.multipart.*
-//import org.http4s.server.Router
-//import org.http4s.server.middleware.CORS
-//import org.http4s.server.staticcontent.resourceServiceBuilder
-//import org.typelevel.log4cats.{Logger, LoggerFactory}
-//import org.typelevel.log4cats.slf4j.{Slf4jFactory, Slf4jLogger}
-//
+package net.collatex.reptilian
+
+import ox.*
+import ox.flow.*
+import sttp.tapir.*
+import sttp.tapir.server.netty.sync.*
+
+import scala.concurrent.duration.*
+import java.time.LocalDate
+import java.util.concurrent.TimeUnit
+import scala.collection.mutable.ListBuffer
+
+// Declarative APIs for endpoints
+// TODO: Format (only one) expressed as endpoint, not part of JSON input
+val xmlEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
+  endpoint.get
+    .in("xml") // URL ends in .../xml
+    .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // mime type
+    // .outHeader(HeaderNames.CacheControl, "no-cache")
+    .errorOut(stringBody)
+
+val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
+  endpoint.get
+    .in("table") // URL ends in .../xml
+    .out(streamTextBody(OxStreams)(CodecFormat.TextPlain())) // mime type
+    // .outHeader(HeaderNames.CacheControl, "no-cache")
+    .errorOut(stringBody)
+
+@main def webServer(): Unit =
+  supervised {
+    val serverBinding = NettySyncServer()
+      .port(8083)
+      .host("localhost")
+      .addEndpoint(
+        xmlEndpoint.handle { unitInput =>
+          // summon[Ox] provides the scope for the Flow logic
+          // streamingXmlLogic(unitInput) // (using summon[Ox])
+          // TODO: Result of alignment as byte stream goes here
+          // TODO: Temporarily:
+          Left("Temp")
+        }
+      )
+      .addEndpoint(
+        txtEndpoint.handle { unitInput =>
+          // summon[Ox] provides the scope for the Flow logic
+          // streamingXmlLogic(unitInput) // (using summon[Ox])
+          // TODO: Result of alignment as byte stream goes here
+          // TODO: Temporarily:
+          Left("Temp")
+        }
+      )
+      .start()
+
+    // Access the port in NettySyncServerBinding
+    val boundPort = serverBinding.port
+    val boundHost = serverBinding.hostName
+
+    // TODO: Write this to log, not stdout
+    println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
+    println(s"Try: curl -N http://$boundHost:$boundPort/products/stream/xml")
+
+    // Keep the supervised scope alive until process termination
+    never
+  }
+
 //
 //object WebService extends IOApp {
 //  given LoggerFactory[IO] = Slf4jFactory.create[IO]
