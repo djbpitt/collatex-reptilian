@@ -38,13 +38,14 @@ val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
           // streamingXmlLogic(unitInput) // (using summon[Ox])
           // TODO: Result of alignment as byte stream goes here
           // TODO: Temporarily:
+          val writer = new java.io.StringWriter()
           val e = <p>Hi, Ronald!</p>
+          // Parameters: writer, node, encoding, xmlDecl, doctype
+          scala.xml.XML.write(writer, e, "UTF-8", true, null)
+          val xmlString = writer.toString
           Right(
             Flow.fromValues(
-              Chunk.fromArray(
-                e.toString
-                  .getBytes(java.nio.charset.StandardCharsets.UTF_8)
-              )
+              Chunk.fromArray(xmlString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
             )
           )
         }
