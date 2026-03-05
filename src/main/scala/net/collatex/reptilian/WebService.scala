@@ -5,11 +5,9 @@ import ox.flow.*
 import sttp.model.HeaderNames
 import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
-
-import scala.concurrent.duration.*
-import java.time.LocalDate
-import java.util.concurrent.TimeUnit
-import scala.collection.mutable.ListBuffer
+import sttp.tapir.server.interceptor.log.DefaultServerLog
+import com.typesafe.scalalogging.{Logger, StrictLogging}
+import sttp.shared.Identity
 
 // Declarative APIs for endpoints
 // TODO: Format (only one for web service) expressed as endpoint, not part of JSON input
@@ -27,17 +25,29 @@ val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
-@main def webServer(): Unit =
+object WebServer extends StrictLogging:
+  val log: Logger = logger // Alias because logger is protected
+  val serverOptions: NettySyncServerOptions = NettySyncServerOptions.customiseInterceptors
+    .serverLog(
+      DefaultServerLog[Identity](
+        doLogWhenReceived = msg => logger.debug(msg),
+        doLogWhenHandled = (msg, ex) => ex.fold(logger.debug(msg))(e => logger.error(msg, e)),
+        doLogAllDecodeFailures = (msg, ex) => logger.warn(msg),
+        doLogExceptions = (msg, ex) => logger.error(msg, ex),
+        noLog = ()
+      )
+    )
+    .options
+
+// NB: Extend name of main method because
+// main method webServer() plus object WebServer confuses the compiler
+@main def webServerMain(): Unit =
   supervised {
-    val serverBinding = NettySyncServer()
+    val serverBinding = NettySyncServer(WebServer.serverOptions)
       .port(8083)
       .host("localhost")
       .addEndpoint(
         xmlEndpoint.handle { unitInput =>
-          // summon[Ox] provides the scope for the Flow logic
-          // streamingXmlLogic(unitInput) // (using summon[Ox])
-          // TODO: Result of alignment as byte stream goes here
-          // TODO: Temporarily:
           val writer = new java.io.StringWriter()
           val e = <p>Hi, Ronald!</p>
           // Parameters: writer, node, encoding, xmlDecl, doctype
@@ -52,10 +62,6 @@ val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
       )
       .addEndpoint(
         txtEndpoint.handle { unitInput =>
-          // summon[Ox] provides the scope for the Flow logic
-          // streamingXmlLogic(unitInput) // (using summon[Ox])
-          // TODO: Result of alignment as byte stream goes here
-          // TODO: Temporarily:
           val e = "Hi, Ronald!"
           Right(
             Flow.fromValues(
@@ -72,9 +78,8 @@ val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
     val boundPort = serverBinding.port
     val boundHost = serverBinding.hostName
 
-    // TODO: Write this to log, not stdout
-    println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
-    println(s"Try: curl -N http://$boundHost:$boundPort/products/stream/xml")
+    // println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
+    WebServer.log.info(s"Server started → http://$boundHost:$boundPort")
 
     // Keep the supervised scope alive until process termination
     never

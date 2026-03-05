@@ -52,6 +52,9 @@
     <!-- DEBUG to write, WARN to ignore-->
     <logger name="sanity-check" level="WARN"/>
 
+    <logger name="io.netty" level="INFO"/>
+    <logger name="sttp.tapir" level="INFO"/>
+
     <!-- Root logger configuration -->
     <root level="DEBUG">
         <appender-ref ref="FILE" />

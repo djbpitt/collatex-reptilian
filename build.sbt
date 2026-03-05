@@ -1,6 +1,6 @@
 val http4sVersion = "0.23.33"
 val log4catsVersion = "2.7.1"
-val tapirVersion = "1.13.9"
+val tapirVersion = "1.13.10"
 lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
@@ -51,8 +51,9 @@ lazy val root = (project in file("."))
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       "ch.qos.logback" % "logback-classic" % "1.5.32",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
       "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-netty-server" % "1.13.9",
+      "com.softwaremill.sttp.tapir" %% "tapir-netty-server" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-json-upickle" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-cats-effect" % tapirVersion,
