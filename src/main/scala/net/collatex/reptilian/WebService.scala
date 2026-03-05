@@ -2,6 +2,7 @@ package net.collatex.reptilian
 
 import ox.*
 import ox.flow.*
+import sttp.model.HeaderNames
 import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
 
@@ -11,19 +12,19 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ListBuffer
 
 // Declarative APIs for endpoints
-// TODO: Format (only one) expressed as endpoint, not part of JSON input
+// TODO: Format (only one for web service) expressed as endpoint, not part of JSON input
 val xmlEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
   endpoint.get
     .in("xml") // URL ends in .../xml
     .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // mime type
-    // .outHeader(HeaderNames.CacheControl, "no-cache")
+    .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
 val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
   endpoint.get
     .in("table") // URL ends in .../xml
     .out(streamTextBody(OxStreams)(CodecFormat.TextPlain())) // mime type
-    // .outHeader(HeaderNames.CacheControl, "no-cache")
+    .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
 @main def webServer(): Unit =
@@ -37,7 +38,15 @@ val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
           // streamingXmlLogic(unitInput) // (using summon[Ox])
           // TODO: Result of alignment as byte stream goes here
           // TODO: Temporarily:
-          Left("Temp")
+          val e = <p>Hi, Ronald!</p>
+          Right(
+            Flow.fromValues(
+              Chunk.fromArray(
+                e.toString
+                  .getBytes(java.nio.charset.StandardCharsets.UTF_8)
+              )
+            )
+          )
         }
       )
       .addEndpoint(
@@ -46,7 +55,14 @@ val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
           // streamingXmlLogic(unitInput) // (using summon[Ox])
           // TODO: Result of alignment as byte stream goes here
           // TODO: Temporarily:
-          Left("Temp")
+          val e = "Hi, Ronald!"
+          Right(
+            Flow.fromValues(
+              Chunk.fromArray(
+                e.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+              )
+            )
+          )
         }
       )
       .start()
