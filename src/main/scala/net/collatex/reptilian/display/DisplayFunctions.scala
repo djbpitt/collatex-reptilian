@@ -1,5 +1,25 @@
 package net.collatex.reptilian.display
 
+/* To support svg mimetype (courtesy of Grok):
+
+import sttp.model.MediaType
+import sttp.tapir._
+val Svg: CodecFormat = new CodecFormat {
+  override val mediaType: MediaType = MediaType("image", "svg+xml")
+}
+ */
+
+/* Distribution of responsibilities
+ *
+ * User chooses output format, which dictates mimetype/filename-extension based on contet
+ * Emitter does not need to know mimetype or extension (that is, context), which is handled by caller
+ * Give writer to emitter so that it doesn't have to return
+ *
+ * Issue: What do we do on error? Web service currently returns string, which we can't do if the
+ * emitter doesn't return? We could throw an exception and catch it at a higher level, but exceptions
+ * are not very functional.
+ * */
+
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.io.file.{Files, Path}

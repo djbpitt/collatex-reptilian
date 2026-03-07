@@ -2,7 +2,7 @@
     <!--
         Configuration:
           Specify logfile name and location in <file>, below, defaults
-            to logs/reptilian.log under location of jar file
+            to logs/reptilian.log under cwd
           Adjust other properties as needed
 
         Our application uses only:
@@ -52,6 +52,7 @@
     <!-- DEBUG to write, WARN to ignore-->
     <logger name="sanity-check" level="WARN"/>
 
+    <!-- Only for web service -->
     <logger name="io.netty" level="INFO"/>
     <logger name="sttp.tapir" level="INFO"/>
 
