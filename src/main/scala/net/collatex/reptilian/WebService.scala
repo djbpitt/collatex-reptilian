@@ -7,7 +7,11 @@ import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
 import sttp.tapir.server.interceptor.log.DefaultServerLog
 import com.typesafe.scalalogging.{Logger, StrictLogging}
+import net.collatex.reptilian.TokenEnum.{Token, TokenSep}
+import net.collatex.reptilian.display.DisplayFunctions.*
 import sttp.shared.Identity
+
+import scala.collection.mutable.ListBuffer
 
 // Declarative APIs for endpoints
 // TODO: Format (only one for web service) expressed as endpoint, not part of JSON input
@@ -48,7 +52,6 @@ object WebServer extends StrictLogging:
       .host("localhost")
       .addEndpoint(
         xmlEndpoint.handle { unitInput =>
-          val writer = new java.io.StringWriter()
           // Temporarily fake plain-text input
           val inputString = s"Hi, Ronald!"
           /* Test with XML-invalid character data
@@ -56,15 +59,31 @@ object WebServer extends StrictLogging:
           val inputString = s"Hi, Ronald!${1.toChar}"
            */
           if XmlValidator.isValid(inputString) then
-            val e = <p>{inputString}</p>
-            // Parameters: writer, node, encoding, xmlDecl, doctype
-            scala.xml.XML.write(writer, e, "UTF-8", true, null)
-            val xmlString = writer.toString
-            Right(
-              Flow.fromValues(
-                Chunk.fromArray(xmlString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
-              )
+            val gTa = Vector[TokenEnum](
+              Token("The ", "the", 0, 0, Map()),
+              Token("red ", "red", 0, 1, Map()),
+              Token("cat", "cat", 0, 2, Map()),
+              TokenSep("sep0", "sep0", 0, 3),
+              Token("The ", "the", 1, 4, Map()),
+              Token("black ", "black", 1, 5, Map()),
+              Token("cat", "cat", 1, 6, Map())
             )
+            val aps: List[AlignmentPoint] = List(
+              AlignmentPoint(gTa, Map(0 -> TokenRange(0, 1, gTa), 1 -> TokenRange(4, 5, gTa))),
+              AlignmentPoint(gTa, Map(0 -> TokenRange(1, 2, gTa), 1 -> TokenRange(5, 6, gTa))),
+              AlignmentPoint(gTa, Map(0 -> TokenRange(2, 3, gTa), 1 -> TokenRange(6, 7, gTa)))
+            )
+            val ar: AlignmentRibbon = AlignmentRibbon(
+              ListBuffer.from(aps)
+            )
+            val xmlResult = displayDispatch(
+              ar,
+              gTa,
+              List(Siglum("Ronald"), Siglum("David")),
+              List(),
+              List(),
+              Map("--format" -> Set("xml")))
+            xmlResult
           else Left("Input data cannot be expressed as XML (invalid characters)")
         }
       )

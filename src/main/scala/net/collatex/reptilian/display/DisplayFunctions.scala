@@ -105,7 +105,7 @@ object DisplayFunctions {
 //      case "json"     => emitJson(root, displaySigla, outputBaseFilename)
 //      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename)
 //      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename)
-//      case "xml"      => emitXml(root, displaySigla, outputBaseFilename)
+      case "xml" => emitXmlFlow(root, displaySigla, outputBaseFilename)
       case other => Left("Output method not (yet) implemented")
     }
 
@@ -1116,6 +1116,40 @@ A [shape="plain"; label=<
       val filename = outputBaseFilename.head + ".xml"
       val file = os.Path(filename, os.pwd)
       os.write.over(file, fullOutput)
+
+  private[display] def emitXmlFlow(
+      alignment: AlignmentRibbon,
+      displaySigla: List[Siglum],
+      outputBaseFilename: Set[String]
+  ): Either[String, Flow[Chunk[Byte]]] =
+
+    val namespace = "http://interedition.eu/collatex/ns/1.0"
+    val rows: Seq[Node] = alignment.children.toVector.map { alignmentUnit =>
+      val point = alignmentUnit.asInstanceOf[AlignmentPoint]
+      val cells = point.witnessReadings.toSeq.sortBy(_._1).map { (witId, tokenRange) =>
+        <cell sigil={displaySigla(witId).value}>{tokenRange.tString}</cell>
+      }
+      <row>
+        {cells}
+      </row>
+    }
+    val xmlRoot: Elem =
+      <alignment xmlns={namespace}>
+        {rows}
+      </alignment>
+    val renderedBody = saxonPrettyPrinter(xmlRoot.toString)
+    val stringFlow = Flow
+      .fromValues(
+        renderedBody
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
+//    Temporarily disable filesystem and stdout output; support only web service
+//    if outputBaseFilename.isEmpty then println(fullOutput)
+//    else
+//      val filename = outputBaseFilename.head + ".xml"
+//      val file = os.Path(filename, os.pwd)
+//      os.write.over(file, fullOutput)
 
   /** Node data for GraphML output
     *
