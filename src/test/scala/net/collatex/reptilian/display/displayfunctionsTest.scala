@@ -4,13 +4,15 @@ import DisplayFunctions.*
 import cats.effect.testing.scalatest.AsyncIOSpec
 import net.collatex.reptilian.TokenEnum.{Token, TokenSep}
 import org.scalatest.*
-import org.scalatest.funsuite.AsyncFunSuite
+import org.scalatest.funsuite.{AnyFunSuite, AsyncFunSuite}
 
 import scala.xml.Elem
 import net.collatex.reptilian.{AlignmentPoint, AlignmentRibbon, Siglum, TokenEnum, TokenRange}
+import org.scalatest.Checkpoints.Checkpoint
 
 import java.io.ByteArrayOutputStream
 import scala.collection.mutable.ListBuffer
+import scala.xml.Utility
 
 /* Alignment fixture for use in tests */
 object DisplayTestFixtures {
@@ -49,7 +51,7 @@ def assertMatchesGolden(output: String, goldenFile: os.Path): Unit =
   val expected = os.read(goldenFile).trim
   assert(output.trim == expected, s"Output did not match golden file: $goldenFile")
 
-class displayfunctionsTest extends AsyncFunSuite with AsyncIOSpec:
+class displayfunctionsTest extends AnyFunSuite with Checkpoints:
 
   import DisplayTestFixtures.*
 
@@ -235,7 +237,6 @@ class displayfunctionsTest extends AsyncFunSuite with AsyncIOSpec:
 //    }
 //  }
 
-
   ignore("emitAlignmentRibbon writes correct HTML to file") {
     val tempDir = os.temp.dir(prefix = "alignment-ribbon-dir-", deleteOnExit = true)
     val outputBase = "alignment-ribbon"
@@ -277,4 +278,65 @@ class displayfunctionsTest extends AsyncFunSuite with AsyncIOSpec:
       .trim
     assert(actual == expected)
 
+  }
+
+  test("emitXmlFlow emits flow from alignment ribbon") {
+    val expected = <alignment xmlns="http://interedition.eu/collatex/ns/1.0">
+        <row>
+          <cell sigil="Ronald">The </cell>
+          <cell sigil="David">The </cell>
+        </row>
+        <row>
+          <cell sigil="Ronald">red </cell>
+          <cell sigil="David">black </cell>
+        </row>
+        <row>
+          <cell sigil="Ronald">cat</cell>
+          <cell sigil="David">cat</cell>
+        </row>
+      </alignment>
+    val gTa = Vector[TokenEnum](
+      Token("The ", "the", 0, 0, Map()),
+      Token("red ", "red", 0, 1, Map()),
+      Token("cat", "cat", 0, 2, Map()),
+      TokenSep("sep0", "sep0", 0, 3),
+      Token("The ", "the", 1, 4, Map()),
+      Token("black ", "black", 1, 5, Map()),
+      Token("cat", "cat", 1, 6, Map())
+    )
+    val aps: List[AlignmentPoint] = List(
+      AlignmentPoint(gTa, Map(0 -> TokenRange(0, 1, gTa), 1 -> TokenRange(4, 5, gTa))),
+      AlignmentPoint(gTa, Map(0 -> TokenRange(1, 2, gTa), 1 -> TokenRange(5, 6, gTa))),
+      AlignmentPoint(gTa, Map(0 -> TokenRange(2, 3, gTa), 1 -> TokenRange(6, 7, gTa)))
+    )
+    val ar: AlignmentRibbon = AlignmentRibbon(
+      ListBuffer.from(aps)
+    )
+    val xmlResult =
+      displayDispatch(ar, gTa, List(Siglum("Ronald"), Siglum("David")), List(), List(), Map("--format" -> Set("xml")))
+    xmlResult match {
+      case Left(e)  => fail(s"Failed with $e")
+      case Right(x) =>
+        // 1. Convert flow to a single String
+        val resultBytes = x.runToList().flatten.toArray
+        val actualString = new String(resultBytes, "UTF-8").trim
+        val expectedDeclaration = """<?xml version="1.0" encoding="UTF-8"?>"""
+        // 3. Verify the XML structure
+        // Strip the declaration from the string before loading to avoid parser confusion
+        // XML.loadString automatically strips the declaration, which it regards as metadata
+        val actualXmlOnly = actualString.stripPrefix(expectedDeclaration).trim
+        val normalizedActual = Utility.trim(scala.xml.XML.loadString(actualXmlOnly))
+        val normalizedExpected = Utility.trim(expected)
+        val cp = Checkpoint()
+        cp {
+          // Verify the declaration exists
+          assert(
+            actualString.startsWith(expectedDeclaration),
+            s"XML Declaration missing or incorrect! Found: ${actualString.take(40)}..."
+          )
+          assert(normalizedActual == normalizedExpected)
+          () // Checkpoint block must return unit
+        }
+        cp.reportAll()
+    }
   }
