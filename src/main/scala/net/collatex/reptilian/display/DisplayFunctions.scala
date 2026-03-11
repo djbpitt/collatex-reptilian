@@ -106,7 +106,7 @@ object DisplayFunctions {
 //      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename)
 //      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename)
 //      case "xml"      => emitXml(root, displaySigla, outputBaseFilename)
-      case other => Left("Oops!")
+      case other => Left("Output method not (yet) implemented")
     }
 
   /** Helper function (pads right with spaces) for plain text table output
