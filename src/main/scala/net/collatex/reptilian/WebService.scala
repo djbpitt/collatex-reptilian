@@ -49,15 +49,23 @@ object WebServer extends StrictLogging:
       .addEndpoint(
         xmlEndpoint.handle { unitInput =>
           val writer = new java.io.StringWriter()
-          val e = <p>Hi, Ronald!</p>
-          // Parameters: writer, node, encoding, xmlDecl, doctype
-          scala.xml.XML.write(writer, e, "UTF-8", true, null)
-          val xmlString = writer.toString
-          Right(
-            Flow.fromValues(
-              Chunk.fromArray(xmlString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+          // Temporarily fake plain-text input
+          val inputString = s"Hi, Ronald!"
+          /* Test with XML-invalid character data
+          TODO: Once this accepts real input, write real tests
+          val inputString = s"Hi, Ronald!${1.toChar}"
+           */
+          if XmlValidator.isValid(inputString) then
+            val e = <p>{inputString}</p>
+            // Parameters: writer, node, encoding, xmlDecl, doctype
+            scala.xml.XML.write(writer, e, "UTF-8", true, null)
+            val xmlString = writer.toString
+            Right(
+              Flow.fromValues(
+                Chunk.fromArray(xmlString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+              )
             )
-          )
+          else Left("Input data cannot be expressed as XML (invalid characters)")
         }
       )
       .addEndpoint(
