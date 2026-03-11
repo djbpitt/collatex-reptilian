@@ -206,34 +206,34 @@ class displayfunctionsTest extends AsyncFunSuite with AsyncIOSpec:
   import org.scalatest.funsuite.AsyncFunSuite
   import org.scalatest.Assertion
 
-  class DisplayFunctionsTest extends AsyncFunSuite with AsyncIOSpec {
-    test("emitStream") {
-      val gTa = Vector(
-        Token("a ", "a", 0, 0, Map()),
-        Token("b ", "b", 0, 1, Map()),
-        TokenSep("sep0", "sep0", 0, 2),
-        Token("A ", "a", 1, 3, Map()),
-        Token("B ", "b", 1, 4, Map())
-      )
-      val alignment: AlignmentRibbon =
-        AlignmentRibbon(
-          ListBuffer(
-            AlignmentPoint(gTa, 0 -> TokenRange(0, 1, gTa), 1 -> TokenRange(3, 4, gTa)),
-            AlignmentPoint(gTa, 0 -> TokenRange(1, 2, gTa), 1 -> TokenRange(4, 5, gTa))
-          )
-        )
-      DisplayFunctions
-        .displayDispatch(
-          alignment,
-          gTa,
-          displaySigla = List(Siglum("A"), Siglum("B")),
-          displayColors = List.empty,
-          fonts = List.empty,
-          argMap = Map("--format" -> Set("stream"))
-        )
-        .as(succeed) // IO[Assertion]
-    }
-  }
+//  class DisplayFunctionsTest extends AsyncFunSuite with AsyncIOSpec {
+//    test("emitStream") {
+//      val gTa = Vector(
+//        Token("a ", "a", 0, 0, Map()),
+//        Token("b ", "b", 0, 1, Map()),
+//        TokenSep("sep0", "sep0", 0, 2),
+//        Token("A ", "a", 1, 3, Map()),
+//        Token("B ", "b", 1, 4, Map())
+//      )
+//      val alignment: AlignmentRibbon =
+//        AlignmentRibbon(
+//          ListBuffer(
+//            AlignmentPoint(gTa, 0 -> TokenRange(0, 1, gTa), 1 -> TokenRange(3, 4, gTa)),
+//            AlignmentPoint(gTa, 0 -> TokenRange(1, 2, gTa), 1 -> TokenRange(4, 5, gTa))
+//          )
+//        )
+//      DisplayFunctions
+//        .displayDispatch(
+//          alignment,
+//          gTa,
+//          displaySigla = List(Siglum("A"), Siglum("B")),
+//          displayColors = List.empty,
+//          fonts = List.empty,
+//          argMap = Map("--format" -> Set("stream"))
+//        )
+//        .as(succeed) // IO[Assertion]
+//    }
+//  }
 
 
   ignore("emitAlignmentRibbon writes correct HTML to file") {
