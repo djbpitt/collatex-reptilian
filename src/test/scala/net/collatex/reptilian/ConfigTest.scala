@@ -3,10 +3,12 @@ package net.collatex.reptilian
 import org.scalatest.funsuite.AnyFunSuite
 import org.virtuslab.yaml.*
 
+import scala.io.Source
+
 class ConfigTest extends AnyFunSuite {
 
   private def readResource(name: String): String =
-    io.Source.fromResource(name).mkString
+    Source.fromResource(name).mkString
 
   private def decode(yaml: String): Config =
     yaml.as[Config].getOrElse(throw new RuntimeException("Missing or invalid config.yaml"))
