@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
     version := "0.1.0-SNAPSHOT",
-    scalaVersion := "3.8.1",
+    scalaVersion := "3.8.3",
     assemblyJarName := s"collatex-reptilian-0.1.0-SNAPSHOT.jar",
     fork := true, // Enable forking for all run tasks
     Compile / run / fork := true, // Ensure forking for run
