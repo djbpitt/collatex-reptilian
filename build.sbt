@@ -1,6 +1,6 @@
 val http4sVersion = "0.23.33"
-val log4catsVersion = "2.7.1"
-val tapirVersion = "1.13.9"
+val log4catsVersion = "2.8.0"
+val tapirVersion = "1.13.14"
 lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
@@ -31,8 +31,8 @@ lazy val root = (project in file("."))
       "org.relaxng" % "jing" % "20241231",
       "com.lihaoyi" %% "os-lib" % "0.11.8",
       "com.lihaoyi" %% "upickle" % "4.4.3",
-      "com.github.haifengl" %% "smile-scala" % "5.2.0",
-      "org.scalatest" %% "scalatest" % "3.2.19" % Test,
+      "com.github.haifengl" %% "smile-scala" % "5.2.3",
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test,
       "com.lihaoyi" %% "scalatags" % "0.13.1",
       "de.sciss" %% "fingertree" % "1.5.5",
       "org.scala-lang.modules" %% "scala-xml" % "2.4.0",
@@ -42,7 +42,7 @@ lazy val root = (project in file("."))
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
       "net.sf.saxon" % "Saxon-HE" % "12.9",
       "com.lihaoyi" %% "requests" % "0.9.3",
-      "com.networknt" % "json-schema-validator" % "3.0.0",
+      "com.networknt" % "json-schema-validator" % "3.0.1",
       "org.virtuslab" %% "scala-yaml" % "0.3.1",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
@@ -57,7 +57,7 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-cats-effect" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion, // Or your preferred server
-      "co.fs2" %% "fs2-core" % "3.12.2"
+      "co.fs2" %% "fs2-core" % "3.13.0"
     ),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "services", _ @_*) => MergeStrategy.concat
