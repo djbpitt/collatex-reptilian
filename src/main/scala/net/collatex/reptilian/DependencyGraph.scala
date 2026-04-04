@@ -97,7 +97,7 @@ object TokenArrayWithStartsAndEnds:
 //   174 in treemap, find next key sequentially, and return associated value.
 object DependencyGraph:
   def apply(hg: Hypergraph[EdgeLabel, TokenRange]): Graph[NodeType] =
-    val gTa = hg.verticesIterator.next.ta
+    val gTa = hg.verticesIterator.next().ta
     val egTa: TokenArrayWithStartsAndEnds = TokenArrayWithStartsAndEnds(gTa)
     val startsWithHg = Hypergraph.hyperedge(EdgeLabel("starts"), egTa.starts*) + hg
     // Sorted map (treemap) from start of token range (Int) to hyperedge label (String)

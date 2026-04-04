@@ -41,7 +41,7 @@ def mergeSingletonHG(
     singletonTokens: Vector[Token],
     hg: Hypergraph[EdgeLabel, TokenRange]
 ): Hypergraph[EdgeLabel, TokenRange] =
-  val ta = hg.verticesIterator.next.ta
+  val ta = hg.verticesIterator.next().ta
   val singletonHypergraph: Hyperedge[EdgeLabel, TokenRange] = createHypergraphFromSingleton(singletonTokens, ta)
   mergeHgHg(hg, singletonHypergraph)
 
@@ -378,7 +378,7 @@ def isSpuriousMatch(candidate: HyperedgeMatch): Boolean =
     .nonEmpty
 
 def createDependencyGraphEdgeLabels(hg: Hypergraph[EdgeLabel, TokenRange]): Unit =
-  val gTa = hg.verticesIterator.next.ta
+  val gTa = hg.verticesIterator.next().ta
   val hgDg = hg.toDependencyGraph
   val fullHgRanking = hg.rank() // FIXME: creates yet another dependency graph internally
   val edges = hgDg.toMap map ((k, v) => k -> v._2)

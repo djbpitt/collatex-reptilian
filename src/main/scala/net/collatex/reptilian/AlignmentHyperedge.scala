@@ -48,6 +48,6 @@ extension (he: Hyperedge[EdgeLabel, TokenRange])
 
   // FIXME: Needs to be generic, since witness identifier is not always int
   def witnesses: Set[Int] =
-    val gTa = he.verticesIterator.next.ta
+    val gTa = he.verticesIterator.next().ta
     val result: Set[Int] = he.verticesIterator.map(_.start).map(e => gTa(e).w).toSet
     result
