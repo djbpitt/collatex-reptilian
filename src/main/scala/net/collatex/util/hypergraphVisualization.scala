@@ -24,8 +24,8 @@ def hypergraphToText(h: Map[Int, Hypergraph[String, TokenRange]]): Unit =
   */
 def hypergraphToReadings(h: Hypergraph[EdgeLabel, TokenRange]): String =
   val result = h.hyperedges.toSeq
-    .sortBy(_.verticesIterator.next.tString)
-    .map(e => s" (${e.verticesIterator.size.toString}) " + s"${e.verticesIterator.next.tString}")
+    .sortBy(_.verticesIterator.next().tString)
+    .map(e => s" (${e.verticesIterator.size.toString}) " + s"${e.verticesIterator.next().tString}")
   result.mkString("\n")
 
 /** Create Graphviz dot representation of domain-specific graph
@@ -53,7 +53,7 @@ def hypergraphMapToDot(
       .sorted
     val group_readings = x.hyperedges.toSeq.sortBy(_.label)
       .map(e =>
-        val tr = e.verticesIterator.next // representative TokenRange
+        val tr = e.verticesIterator.next() // representative TokenRange
         s"\"${tokenArray.slice(tr.start, tr.until).map(_.t).mkString}\""
       )
     val ap_to_group_edges = group_ids

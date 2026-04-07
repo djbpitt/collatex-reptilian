@@ -163,7 +163,7 @@ def dependencyGraphToDot(
         "\"",
         k,
         ": ",
-        hg(EdgeLabel(k)).getOrElse(throw new RuntimeException("Should not happen")).verticesIterator.next.tString,
+        hg(EdgeLabel(k)).getOrElse(throw new RuntimeException("Should not happen")).verticesIterator.next().tString,
         "\""
       ).mkString
     )

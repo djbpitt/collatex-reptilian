@@ -1,7 +1,7 @@
 package net.collatex.reptilian
 
 import scala.annotation.{tailrec, unused}
-import scala.xml.{Elem, NodeSeq, Unparsed}
+import scala.xml.{Elem, Unparsed}
 import math.Ordered.orderingToOrdered
 import net.collatex.reptilian.display.TextWidth
 
