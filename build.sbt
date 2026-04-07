@@ -1,6 +1,6 @@
 val http4sVersion = "0.23.33"
 val log4catsVersion = "2.8.0"
-val tapirVersion = "1.13.14"
+val tapirVersion = "1.13.15"
 lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
@@ -39,7 +39,7 @@ lazy val root = (project in file("."))
       "io.github.pityka" %% "pairwisealignment" % "2.2.7",
       "de.sciss" %% "linkernighantsp" % "0.1.3",
       "org.typelevel" %% "cats-core" % "2.13.0",
-      "org.typelevel" %% "cats-effect-testing-scalatest" % "1.7.0" % Test,
+      "org.typelevel" %% "cats-effect-testing-scalatest" % "1.8.0" % Test,
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
       "net.sf.saxon" % "Saxon-HE" % "12.9",
       "com.lihaoyi" %% "requests" % "0.9.3",
