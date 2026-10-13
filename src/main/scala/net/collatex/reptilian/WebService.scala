@@ -64,7 +64,7 @@ object WebServer extends StrictLogging:
           TODO: Once this accepts real input, write real tests
           val inputString = s"Hi, Ronald!${1.toChar}"
            */
-          if XmlValidator.isValid(inputString) then
+          if XmlValidator.isUnicodeValid(inputString) then // Validates only for Unicode, not for markup
             val gTa = Vector[TokenEnum](
               Token("The ", "the", 0, 0, Map()),
               Token("red ", "red", 0, 1, Map()),

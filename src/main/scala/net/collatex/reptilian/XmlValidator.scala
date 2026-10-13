@@ -10,7 +10,7 @@ object XmlValidator {
   // Automatically compiled for reuse
   private val InvalidXml10Regex: Regex = "[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD]".r
 
-  def isValid(input: String): Boolean = {
+  def isUnicodeValid(input: String): Boolean = {
     // Returns true if no invalid characters are found
     InvalidXml10Regex.findFirstIn(input).isEmpty
   }
