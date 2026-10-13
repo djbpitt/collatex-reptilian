@@ -1,11 +1,11 @@
-val http4sVersion = "0.23.33"
+val http4sVersion = "0.23.38"
 val log4catsVersion = "2.8.0"
-val tapirVersion = "1.13.15"
+val tapirVersion = "1.13.33"
 lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
     version := "0.1.0-SNAPSHOT",
-    scalaVersion := "3.8.3",
+    scalaVersion := "3.8.1",
     assemblyJarName := s"collatex-reptilian-0.1.0-SNAPSHOT.jar",
     fork := true, // Enable forking for all run tasks
     Compile / run / fork := true, // Ensure forking for run
@@ -31,11 +31,11 @@ lazy val root = (project in file("."))
       "org.relaxng" % "jing" % "20241231",
       "com.lihaoyi" %% "os-lib" % "0.11.8",
       "com.lihaoyi" %% "upickle" % "4.4.3",
-      "com.github.haifengl" %% "smile-scala" % "5.2.3",
+      "com.github.haifengl" %% "smile-scala" % "5.2.0",
       "org.scalatest" %% "scalatest" % "3.2.20" % Test,
       "com.lihaoyi" %% "scalatags" % "0.13.1",
       "de.sciss" %% "fingertree" % "1.5.5",
-      "org.scala-lang.modules" %% "scala-xml" % "2.4.0",
+      "org.scala-lang.modules" %% "scala-xml" % "2.5.0",
       "io.github.pityka" %% "pairwisealignment" % "2.2.7",
       "de.sciss" %% "linkernighantsp" % "0.1.3",
       "org.typelevel" %% "cats-core" % "2.13.0",
@@ -43,14 +43,14 @@ lazy val root = (project in file("."))
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
       "net.sf.saxon" % "Saxon-HE" % "12.9",
       "com.lihaoyi" %% "requests" % "0.9.3",
-      "com.networknt" % "json-schema-validator" % "3.0.1",
-      "org.virtuslab" %% "scala-yaml" % "0.3.1",
+      "com.networknt" % "json-schema-validator" % "3.0.8",
+      "org.virtuslab" %% "scala-yaml" % "0.3.3",
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
-      "ch.qos.logback" % "logback-classic" % "1.5.32",
+      "ch.qos.logback" % "logback-classic" % "1.6.5",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
       "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server" % tapirVersion,
@@ -60,8 +60,8 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-cats-effect" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion, // Or your preferred server
-      "com.softwaremill.ox" %% "core" % "1.0.4",
-      "co.fs2" %% "fs2-core" % "3.13.0"
+      "co.fs2" %% "fs2-core" % "3.14.0",
+      "com.softwaremill.ox" %% "core" % "1.0.9"
     ),
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "services", _ @_*) => MergeStrategy.concat
