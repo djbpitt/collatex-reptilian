@@ -45,10 +45,16 @@ object WebServer extends StrictLogging:
 
 // NB: Extend name of main method because
 // main method webServer() plus object WebServer confuses the compiler
-@main def webServerMain(): Unit =
+@main def webServerMain(args: String*): Unit = {
+  val defaultPortNumber = 8083
+  val portNumber = args match {
+    case Seq() => defaultPortNumber
+    case Seq(value) => value.toIntOption.getOrElse(defaultPortNumber)
+    case _ => throw new IllegalArgumentException("Supply zero or one argument (port number)")
+  }
   supervised {
     val serverBinding = NettySyncServer(WebServer.serverOptions)
-      .port(8083)
+      .port(portNumber)
       .host("localhost")
       .addEndpoint(
         xmlEndpoint.handle { _ =>
@@ -111,3 +117,4 @@ object WebServer extends StrictLogging:
     // Keep the supervised scope alive until process termination
     never
   }
+}
