@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "collatex-reptilian",
     version := "0.1.0-SNAPSHOT",
-    scalaVersion := "3.8.1",
+    scalaVersion := "3.9.0",
     assemblyJarName := s"collatex-reptilian-0.1.0-SNAPSHOT.jar",
     fork := true, // Enable forking for all run tasks
     Compile / run / fork := true, // Ensure forking for run
@@ -31,7 +31,7 @@ lazy val root = (project in file("."))
       "org.relaxng" % "jing" % "20241231",
       "com.lihaoyi" %% "os-lib" % "0.11.8",
       "com.lihaoyi" %% "upickle" % "4.4.3",
-      "com.github.haifengl" %% "smile-scala" % "5.2.0",
+      "com.github.haifengl" %% "smile-scala" % "7.0.0",
       "org.scalatest" %% "scalatest" % "3.2.20" % Test,
       "com.lihaoyi" %% "scalatags" % "0.13.1",
       "de.sciss" %% "fingertree" % "1.5.5",
