@@ -51,7 +51,7 @@ object WebServer extends StrictLogging:
       .port(8083)
       .host("localhost")
       .addEndpoint(
-        xmlEndpoint.handle { unitInput =>
+        xmlEndpoint.handle { _ =>
           // Temporarily fake plain-text input
           val inputString = s"Hi, Ronald!"
           /* Test with XML-invalid character data
@@ -88,7 +88,7 @@ object WebServer extends StrictLogging:
         }
       )
       .addEndpoint(
-        txtEndpoint.handle { unitInput =>
+        txtEndpoint.handle { _ =>
           val e = "Hi, Ronald!"
           Right(
             Flow.fromValues(
