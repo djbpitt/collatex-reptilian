@@ -20,7 +20,7 @@ object GtaBuilder:
     java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFC).normalizeSpace.toLowerCase
 
   // Emit tokens from raw strings (assign w/g, build Token)
-  private def emitFromStrings(raws: Iterator[String], witIndex: Int, startG: Int): Vector[TokenEnum] =
+  def emitFromStrings(raws: Iterator[String], witIndex: Int, startG: Int): Vector[TokenEnum] =
     val result = raws.zipWithIndex.map { (rawT, localTokenOffset) =>
       TokenEnum.Token(
         rawT,
@@ -34,7 +34,7 @@ object GtaBuilder:
 
   // Emit tokens from provided JSON object (ujson.Value of type JSON array)
   // Create `n` if needed, preserve `other`
-  private def emitFromProvided(tokens: Seq[Value], witIndex: Int, startG: Int): Vector[TokenEnum] =
+  def emitFromProvided(tokens: Seq[Value], witIndex: Int, startG: Int): Vector[TokenEnum] =
     val result = tokens.arr.zipWithIndex.map { (jsonToken, localTokenOffset) =>
       val t: String = jsonToken.obj("t").str
       val n: String =
@@ -202,14 +202,14 @@ object GtaBuilder:
     * Tokens are represented as a sequence of JSON values to accommodate the optional `other` property, the keys for
     * which cannot be predicted, and therefore cannot be represented directly as case class property names
     */
-  private case class WitObj(
+  case class WitObj(
       id: String,
       font: Option[String] = None,
       color: Option[String] = None,
       content: Option[String] = None,
       tokens: Option[Seq[ujson.Value]] = None // Value, not Obj
   ) derives ReadWriter
-  private case class JsonDataForAlignment(font: Option[String] = None, witnesses: Seq[WitObj]) derives ReadWriter
+  case class JsonDataForAlignment(font: Option[String] = None, witnesses: Seq[WitObj]) derives ReadWriter
 
   def jsonToWitnessData(
       manifest: String,

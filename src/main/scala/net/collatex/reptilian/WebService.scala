@@ -6,10 +6,17 @@ import sttp.model.HeaderNames
 import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
 import sttp.tapir.server.interceptor.log.DefaultServerLog
+import sttp.tapir.generic.auto.*
+import upickle.default.*
+import sttp.tapir.json.upickle.*
 import com.typesafe.scalalogging.{Logger, StrictLogging}
+import net.collatex.reptilian.GtaBuilder.JsonDataForAlignment
 import net.collatex.reptilian.TokenEnum.{Token, TokenSep}
 import net.collatex.reptilian.display.DisplayFunctions.*
 import sttp.shared.Identity
+import sttp.tapir.Schema
+implicit val ujsonValueSchema: Schema[ujson.Value] = Schema.any
+
 
 import scala.collection.mutable.ListBuffer
 
@@ -19,6 +26,16 @@ val xmlEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
   endpoint.get
     .in("xml") // URL ends in .../xml
     .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // mime type application/xml (not for svg)
+    .out(header(HeaderNames.CacheControl, "no-cache"))
+    .errorOut(stringBody)
+
+val jsonPostData: EndpointIO[JsonDataForAlignment] = jsonBody[JsonDataForAlignment]
+
+val xmlEndpointPost =
+  endpoint.post
+    .in("xml") // URL ends in .../xml
+    .in(jsonPostData)
+    .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // returned mime type application/xml (not for svg)
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -58,6 +75,43 @@ object WebServer extends StrictLogging:
       .host("localhost")
       .addEndpoint(
         xmlEndpoint.handle { _ =>
+          // Temporarily fake plain-text input
+          val inputString = s"Hi, Ronald!"
+          /* Test with XML-invalid character data
+          TODO: Once this accepts real input, write real tests
+          val inputString = s"Hi, Ronald!${1.toChar}"
+           */
+          if XmlValidator.isUnicodeValid(inputString) then // Validates only for Unicode, not for markup
+            val gTa = Vector[TokenEnum](
+              Token("The ", "the", 0, 0, Map()),
+              Token("red ", "red", 0, 1, Map()),
+              Token("cat", "cat", 0, 2, Map()),
+              TokenSep("sep0", "sep0", 0, 3),
+              Token("The ", "the", 1, 4, Map()),
+              Token("black ", "black", 1, 5, Map()),
+              Token("cat", "cat", 1, 6, Map())
+            )
+            val aps: List[AlignmentPoint] = List(
+              AlignmentPoint(gTa, Map(0 -> TokenRange(0, 1, gTa), 1 -> TokenRange(4, 5, gTa))),
+              AlignmentPoint(gTa, Map(0 -> TokenRange(1, 2, gTa), 1 -> TokenRange(5, 6, gTa))),
+              AlignmentPoint(gTa, Map(0 -> TokenRange(2, 3, gTa), 1 -> TokenRange(6, 7, gTa)))
+            )
+            val ar: AlignmentRibbon = AlignmentRibbon(
+              ListBuffer.from(aps)
+            )
+            val xmlResult = displayDispatch(
+              ar,
+              gTa,
+              List(Siglum("Ronald"), Siglum("David")),
+              List(),
+              List(),
+              Map("--format" -> Set("xml")))
+            xmlResult
+          else Left("Input data cannot be expressed as XML (invalid characters)")
+        }
+      )
+      .addEndpoint(
+        xmlEndpointPost.handle { _ =>
           // Temporarily fake plain-text input
           val inputString = s"Hi, Ronald!"
           /* Test with XML-invalid character data
