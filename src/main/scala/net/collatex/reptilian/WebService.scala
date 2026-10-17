@@ -17,7 +17,6 @@ import sttp.shared.Identity
 import sttp.tapir.Schema
 implicit val ujsonValueSchema: Schema[ujson.Value] = Schema.any
 
-
 import scala.collection.mutable.ListBuffer
 
 // Declarative APIs for endpoints
@@ -65,9 +64,9 @@ object WebServer extends StrictLogging:
 @main def webServerMain(args: String*): Unit = {
   val defaultPortNumber = 8083
   val portNumber = args match {
-    case Seq() => defaultPortNumber
+    case Seq()      => defaultPortNumber
     case Seq(value) => value.toIntOption.getOrElse(defaultPortNumber)
-    case _ => throw new IllegalArgumentException("Supply zero or one argument (port number)")
+    case _          => throw new IllegalArgumentException("Supply zero or one argument (port number)")
   }
   supervised {
     val serverBinding = NettySyncServer(WebServer.serverOptions)
@@ -105,7 +104,8 @@ object WebServer extends StrictLogging:
               List(Siglum("Ronald"), Siglum("David")),
               List(),
               List(),
-              Map("--format" -> Set("xml")))
+              Map("--format" -> Set("xml"))
+            )
             xmlResult
           else Left("Input data cannot be expressed as XML (invalid characters)")
         }
@@ -113,32 +113,33 @@ object WebServer extends StrictLogging:
       .addEndpoint(
         xmlEndpointPost.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
+            val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
             val results = for { // Gta, List[Siglum]
-              cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
               ResolvedConfig(tokensPerWitnessLimit, tokenPattern, defaultColors, defaultPort) <- loadResolvedConfig()
               witnesses <- jsonToWitnessData(cfg, jsonInput)
               out <- buildFromWitnessData(witnesses, defaultColors)
               root = createAlignmentRibbon(out.head, Set(), false)
-            } yield (root, out, defaultColors) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
+            } yield (
+              root,
+              out,
+              defaultColors
+            ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
             results match {
-              case Left(x) => throw new Exception("Computing alignment ribbon and Gta failed") // TODO: Handle correctly for web service
+              case Left(x) =>
+                throw new Exception(
+                  "Computing alignment ribbon and Gta failed"
+                ) // TODO: Handle correctly for web service
               case Right(x) =>
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
                 val colors = x._3 // TODO: WTF
-                val xmlResult = displayDispatch(
-                  ar,
-                  gTa,
-                  sigla,
-                  colors,
-                  List(),
-                  Map("--format" -> Set("xml")))
+                val xmlResult = displayDispatch(ar, gTa, sigla, colors, List(), Map("--format" -> Set("xml")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as XML (invalid characters)")
-            }
-          )
+        }
+      )
       .addEndpoint(
         txtEndpoint.handle { _ =>
           val e = "Hi, Ronald!"
