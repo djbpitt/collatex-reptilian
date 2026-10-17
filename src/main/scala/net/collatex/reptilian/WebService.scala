@@ -62,10 +62,10 @@ object WebServer extends StrictLogging:
 // NB: Extend name of main method because
 // main method webServer() plus object WebServer confuses the compiler
 @main def webServerMain(): Unit = {
-  val portNumber =  8083
+  val config =  loadResolvedConfig().getOrElse(throw new Exception("Could not read config.yaml"))
   supervised {
     val serverBinding = NettySyncServer(WebServer.serverOptions)
-      .port(portNumber)
+      .port(config.serverPort)
       .host("localhost")
       .addEndpoint(
         xmlEndpoint.handle { _ =>

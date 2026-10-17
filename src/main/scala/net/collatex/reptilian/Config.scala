@@ -11,20 +11,20 @@ case class Config(
     tokensPerWitnessLimit: Option[Int] = None,
     tokenPattern: String,
     defaultColors: List[String],
-    defaultPort: Int
+    serverPort: Int
 ) derives YamlCodec
 case class ResolvedConfig(
     tokensPerWitnessLimit: Int,
     tokenPattern: Regex,
     defaultColors: List[String],
-    defaultPort: Int
+    serverPort: Int
 )
 object ResolvedConfig {
   def from(c: Config): ResolvedConfig = ResolvedConfig(
     tokensPerWitnessLimit = c.tokensPerWitnessLimit.getOrElse(Int.MaxValue),
     tokenPattern = Regex(c.tokenPattern),
     defaultColors = c.defaultColors,
-    defaultPort = c.defaultPort
+    serverPort = c.serverPort
   )
 }
 def loadResolvedConfig(resourceName: String = "config.yaml"): Either[String, ResolvedConfig] =
