@@ -40,7 +40,7 @@ class ConfigTest extends AnyFunSuite {
         |defaultColors:
         | - '#ff0000'
         | - '#00ff00'
-        |defaultPort: 8082
+        |serverPort: 8082
         |""".stripMargin
     // System.err.print(yaml)
 
@@ -71,7 +71,7 @@ class ConfigTest extends AnyFunSuite {
     val yaml =
       """tokenPattern: '(?:\w+|[^\w\s])\s*'
         |defaultColors: ['A','B','B','C']
-        |defaultPort: 8082
+        |serverPort: 8082
         |""".stripMargin
 
     val cfg = decode(yaml)

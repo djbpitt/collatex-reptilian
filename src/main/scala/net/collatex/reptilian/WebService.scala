@@ -110,14 +110,12 @@ object WebServer extends StrictLogging:
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
             val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
             val results = for { // Gta, List[Siglum]
-              ResolvedConfig(tokensPerWitnessLimit, tokenPattern, defaultColors, defaultPort) <- loadResolvedConfig()
               witnesses <- jsonToWitnessData(cfg, jsonInput)
-              out <- buildFromWitnessData(witnesses, defaultColors)
+              out <- buildFromWitnessData(witnesses, config.defaultColors)
               root = createAlignmentRibbon(out.head, Set(), false)
             } yield (
               root,
-              out,
-              defaultColors
+              out
             ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
             results match {
               case Left(x) =>
@@ -128,8 +126,7 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val colors = x._3 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, colors, List(), Map("--format" -> Set("xml")))
+                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("xml")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as XML (invalid characters)")
