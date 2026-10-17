@@ -61,13 +61,8 @@ object WebServer extends StrictLogging:
 
 // NB: Extend name of main method because
 // main method webServer() plus object WebServer confuses the compiler
-@main def webServerMain(args: String*): Unit = {
-  val defaultPortNumber = 8083
-  val portNumber = args match {
-    case Seq()      => defaultPortNumber
-    case Seq(value) => value.toIntOption.getOrElse(defaultPortNumber)
-    case _          => throw new IllegalArgumentException("Supply zero or one argument (port number)")
-  }
+@main def webServerMain(): Unit = {
+  val portNumber =  8083
   supervised {
     val serverBinding = NettySyncServer(WebServer.serverOptions)
       .port(portNumber)
