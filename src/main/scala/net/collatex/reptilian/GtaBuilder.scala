@@ -68,7 +68,8 @@ object GtaBuilder:
         for
           _ <- validateJson(source)
           json <- retrieveManifestJson(source)
-          witnesses <- jsonToWitnessData(json, cfg)
+          jd = read[JsonDataForAlignment](json)
+          witnesses <- jsonToWitnessData(cfg, jd)
           out <- buildFromWitnessData(witnesses, defaultColors)
         yield out
 
@@ -158,7 +159,7 @@ object GtaBuilder:
       val gCounter = 0
       val out = witTokenStrings.zipWithIndex
         .foldLeft(Vector.empty[WitnessData]) { (acc, current) =>
-          val (currentBs, currentWitOffset): (BufferedSource, Int) = current // current witness data as buffered string
+          val (currentBs, currentWitOffset) = current: (BufferedSource, Int) // current witness data as buffered string
           val currentFont: Option[String] =
             ((manifest \ "_")(currentWitOffset) \ "@font").headOption.map(_.text).orElse(rootFontOpt)
           val currentSiglum: Siglum = Siglum(allSigla(currentWitOffset).head.text) // current siglum
@@ -212,10 +213,9 @@ object GtaBuilder:
   case class JsonDataForAlignment(font: Option[String] = None, witnesses: Seq[WitObj]) derives ReadWriter
 
   def jsonToWitnessData(
-      manifest: String,
-      cfg: BuildConfig
+      cfg: BuildConfig,
+      jd: JsonDataForAlignment
   ): Either[String, Seq[WitnessData]] = {
-    val jd: JsonDataForAlignment = read[JsonDataForAlignment](manifest)
     val rootFontOpt: Option[String] = jd.font
     val out: Vector[WitnessData] = jd.witnesses.zipWithIndex
       .foldLeft(Vector.empty[WitnessData]) { (acc, current) =>

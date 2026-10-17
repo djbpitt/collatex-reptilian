@@ -50,7 +50,8 @@ class WitnessDataTest extends AnyFunSuite:
     val manifestPath = os.Path(manifestUrlOpt.toURI)
     val manifestSource = ManifestSource.Local(manifestPath)
     val manifest = retrieveManifestJson(manifestSource).getOrElse(fail(s"Could not load $manifestFilename"))
-    val Right(results) = jsonToWitnessData(manifest, cfg): @unchecked
+    val jd: JsonDataForAlignment = upickle.read[JsonDataForAlignment](manifest)
+    val Right(results) = jsonToWitnessData(cfg, jd): @unchecked
     results
 
   // Helpers for XML manifest tests for fonts, colors, and token content (`t`, `n`)
