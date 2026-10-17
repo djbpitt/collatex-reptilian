@@ -41,7 +41,7 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-core" % "2.13.0",
       "org.typelevel" %% "cats-effect-testing-scalatest" % "1.8.0" % Test,
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.4.0",
-      "net.sf.saxon" % "Saxon-HE" % "13.0",
+      "net.sf.saxon" % "Saxon-HE" % "13.1",
       "com.lihaoyi" %% "requests" % "0.9.3",
       "com.networknt" % "json-schema-validator" % "3.0.8",
       "org.virtuslab" %% "scala-yaml" % "0.3.3",
