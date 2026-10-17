@@ -7,7 +7,6 @@ import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
 import sttp.tapir.server.interceptor.log.DefaultServerLog
 import sttp.tapir.generic.auto.*
-import upickle.default.*
 import sttp.tapir.json.upickle.*
 import com.typesafe.scalalogging.{Logger, StrictLogging}
 import net.collatex.reptilian.GtaBuilder.{BuildConfig, JsonDataForAlignment, buildFromWitnessData, jsonToWitnessData}
@@ -118,7 +117,7 @@ object WebServer extends StrictLogging:
               out
             ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
             results match {
-              case Left(x) =>
+              case Left(_) =>
                 throw new Exception(
                   "Computing alignment ribbon and Gta failed"
                 ) // TODO: Handle correctly for web service
