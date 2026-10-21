@@ -89,23 +89,30 @@ object DisplayFunctions {
      * Not yet treating no specified format as requesting horizontal plain-text table as default
      * */
     formats.head match {
-//      case "table" | "table-h" =>
+      // TODO: (x)html formats should return xhtml vs html, with different media types, based on filename extension
+      // TODO: XML formats should have switch to include/suppress XML declaration
+//      case "table" | "table-h" => // API: ascii table, text/plain
 //        // TODO: Call method to create sink with correct filename extension (if file output)
 //        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
+      // TODO: Remove "stream" and "flow" methods
 //      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
       case "flow" => emitTableHorizontalFlow(root, displaySigla, gTa, outputBaseFilename)
-//      case "table-v"      => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
-//      case "table-html-h" => emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-//      case "table-html-v" => emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-//      case "ribbon" =>
+//      case "table-v" // API: ascii table, text/plain
+//        => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
+//      case "table-html-h" => // API: application/xhtml+xml
+//        emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+//      case "table-html-v" => // API: application/xhtml+xml
+//        emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+//      case "ribbon" => // API: application/xhtml+xml
 //        emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
 //      // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
-//      case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename)
-//      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true)
-//      case "json"     => emitJson(root, displaySigla, outputBaseFilename)
-//      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename)
-//      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename)
-      case "xml" => emitXmlFlow(root, displaySigla, outputBaseFilename)
+//      case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename) // image/svg+xml
+//      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
+//      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
+//      case "dot"      => // Create handler // text/plain (legacy); also API: text/vnd.graphviz
+//      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
+//      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
+      case "xml" => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
       case other => Left("Output method not (yet) implemented")
     }
 
