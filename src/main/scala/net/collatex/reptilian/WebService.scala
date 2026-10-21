@@ -19,14 +19,6 @@ implicit val ujsonValueSchema: Schema[ujson.Value] = Schema.any
 import scala.collection.mutable.ListBuffer
 
 // Declarative APIs for endpoints
-// TODO: Format (only one for web service) expressed as endpoint, not part of JSON input
-val xmlEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
-  endpoint.get
-    .in("xml") // URL ends in .../xml
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // mime type application/xml (not for svg)
-    .out(header(HeaderNames.CacheControl, "no-cache"))
-    .errorOut(stringBody)
-
 val jsonPostData: EndpointIO[JsonDataForAlignment] = jsonBody[JsonDataForAlignment]
 
 val xmlEndpointPost =
@@ -37,12 +29,21 @@ val xmlEndpointPost =
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
-val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
+val teiEndpointPost =
+  endpoint.post
+    .in("tei") // URL ends in .../tei
+    .in(jsonPostData)
+    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
+    .out(header(HeaderNames.ContentType, "application/tei+xml")) // override default XML mime type of application/xm
+    .out(header(HeaderNames.CacheControl, "no-cache"))
+    .errorOut(stringBody)
+
+/*val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
   endpoint.get
     .in("table") // URL ends in .../table
     .out(streamTextBody(OxStreams)(CodecFormat.TextPlain())) // mime type text/plain
     .out(header(HeaderNames.CacheControl, "no-cache"))
-    .errorOut(stringBody)
+    .errorOut(stringBody)*/
 
 object WebServer extends StrictLogging:
   val log: Logger = logger // Alias because logger property is protected
@@ -66,6 +67,7 @@ object WebServer extends StrictLogging:
     val serverBinding = NettySyncServer(WebServer.serverOptions)
       .port(config.serverPort)
       .host("localhost")
+/*
       .addEndpoint(
         xmlEndpoint.handle { _ =>
           // Temporarily fake plain-text input
@@ -104,6 +106,7 @@ object WebServer extends StrictLogging:
           else Left("Input data cannot be expressed as XML (invalid characters)")
         }
       )
+*/
       .addEndpoint(
         xmlEndpointPost.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -131,7 +134,35 @@ object WebServer extends StrictLogging:
           else Left("Input data cannot be expressed as XML (invalid characters)")
         }
       )
+
       .addEndpoint(
+        teiEndpointPost.handle { jsonInput =>
+          if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
+            val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
+            val results = for { // Gta, List[Siglum]
+              witnesses <- jsonToWitnessData(cfg, jsonInput)
+              out <- buildFromWitnessData(witnesses, config.defaultColors)
+              root = createAlignmentRibbon(out.head, Set(), false)
+            } yield (
+              root,
+              out
+            ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
+            results match {
+              case Left(_) =>
+                throw new Exception(
+                  "Computing alignment ribbon and Gta failed"
+                ) // TODO: Handle correctly for web service
+              case Right(x) =>
+                val ar = x.head
+                val gTa = x._2.head
+                val sigla = x._2._2 // TODO: WTF
+                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("tei")))
+                xmlResult
+            }
+          else Left("Input data cannot be expressed as TEI XML (invalid characters)")
+        }
+      )
+/*      .addEndpoint(
         txtEndpoint.handle { _ =>
           val e = "Hi, Ronald!"
           Right(
@@ -142,7 +173,7 @@ object WebServer extends StrictLogging:
             )
           )
         }
-      )
+      )*/
       .start()
 
     // Access the port in NettySyncServerBinding

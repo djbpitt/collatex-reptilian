@@ -111,7 +111,7 @@ object DisplayFunctions {
 //      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
 //      case "dot"      => // Create handler // text/plain (legacy); also API: text/vnd.graphviz
 //      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
-//      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
+      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
       case "xml" => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
       case other => Left("Output method not (yet) implemented")
     }
@@ -909,7 +909,7 @@ A [shape="plain"; label=<
       alignment: AlignmentRibbon,
       displaySigla: List[Siglum],
       outputBaseFilename: Set[String]
-  ): Unit = {
+  ): Either[String, Flow[Chunk[Byte]]] = {
 
     val nsCx = "http://interedition.eu/collatex/ns/1.0"
     val nsTei = "http://www.tei-c.org/ns/1.0"
@@ -1037,13 +1037,19 @@ A [shape="plain"; label=<
 
     val rawXmlString = s"""<?xml version="1.0" encoding="UTF-8"?>\n${root.toString()}"""
     val finalOutput = saxonPrettyPrinter(rawXmlString)
-
-    if (outputBaseFilename.isEmpty) println(finalOutput)
-    else {
-      val out = new PrintWriter(s"${outputBaseFilename.head}-tei.xml", "UTF-8")
-      try out.println(finalOutput)
-      finally out.close()
-    }
+    val stringFlow = Flow
+      .fromValues(
+        finalOutput
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
+// temporarily disable filesystem output
+    //    if (outputBaseFilename.isEmpty) println(finalOutput)
+//    else {
+//      val out = new PrintWriter(s"${outputBaseFilename.head}-tei.xml", "UTF-8")
+//      try out.println(finalOutput)
+//      finally out.close()
+//    }
   }
 
   /** Pretty-print XML using Saxon
