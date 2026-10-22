@@ -435,7 +435,7 @@ def createHorizontalRibbons(
             <g>{
               for e <- groups.head.members.zipWithIndex yield
                 val fillColor = displayColors(e._1.witId)
-                val font = fonts(e._1.witId)
+                val font = fonts.lift(e._1.witId).flatten
                 val vOffset = e._2
                 Seq(
                   plotRect(vOffset, node, fillColor, top),
