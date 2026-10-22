@@ -15,6 +15,8 @@ import net.collatex.reptilian.display.DisplayFunctions.*
 import sttp.shared.Identity
 import sttp.tapir.Schema
 implicit val ujsonValueSchema: Schema[ujson.Value] = Schema.any
+import sttp.tapir.CodecFormat
+import sttp.model.MediaType
 
 import scala.collection.mutable.ListBuffer
 
@@ -25,16 +27,29 @@ val xmlEndpoint =
   endpoint.post
     .in("xml") // URL ends in .../xml
     .in(jsonPostData)
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // returned mime type application/xml (not for svg)
+    .out(streamTextBody(OxStreams)(CodecFormat.Xml())) // returned mime type application/xml (not for svg, etc)
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
+
+object CustomCodecs:
+  val tei: CodecFormat = new CodecFormat {
+    override def mediaType: MediaType = MediaType.unsafeParse("application/tei+xml")
+  }
+  val graphml: CodecFormat = new CodecFormat {
+    override def mediaType: MediaType = MediaType.unsafeParse("application/graphml+xml")
+  }
+  val xhtml: CodecFormat = new CodecFormat {
+    override def mediaType: MediaType = MediaType.ApplicationXhtml
+  }
+  val svg: CodecFormat = new CodecFormat {
+    override def mediaType: MediaType = MediaType.unsafeParse("image/svg+xml")
+  }
 
 val teiEndpoint =
   endpoint.post
     .in("tei") // URL ends in .../tei
     .in(jsonPostData)
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
-    .out(header(HeaderNames.ContentType, "application/tei+xml")) // override default XML mime type of application/xm
+    .out(streamTextBody(OxStreams)(CustomCodecs.tei))
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -42,8 +57,7 @@ val graphMlEndpoint =
   endpoint.post
     .in("graphml") // URL ends in .../tei
     .in(jsonPostData)
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
-    .out(header(HeaderNames.ContentType, "application/graphml+xml")) // override default XML mime type of application/xm
+    .out(streamTextBody(OxStreams)(CustomCodecs.graphml))
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -51,8 +65,7 @@ val svgEndpoint =
   endpoint.post
     .in("svg") // URL ends in .../tei
     .in(jsonPostData)
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
-    .out(header(HeaderNames.ContentType, "image/svg+xml")) // override default XML mime type of application/xm
+    .out(streamTextBody(OxStreams)(CustomCodecs.svg))
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -60,8 +73,7 @@ val svgrichEndpoint =
   endpoint.post
     .in("svg-rich") // URL ends in .../tei
     .in(jsonPostData)
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
-    .out(header(HeaderNames.ContentType, "image/svg+xml")) // override default XML mime type of application/xm
+    .out(streamTextBody(OxStreams)(CustomCodecs.svg))
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -69,8 +81,7 @@ val ribbonEndpoint =
   endpoint.post
     .in("ribbon") // URL ends in .../tei
     .in(jsonPostData)
-    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
-    .out(header(HeaderNames.ContentType, MediaType.ApplicationXhtml.toString())) // override default XML mime type of application/xm
+    .out(streamTextBody(OxStreams)(CustomCodecs.xhtml))
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -98,12 +109,12 @@ object WebServer extends StrictLogging:
 // NB: Extend name of main method because
 // main method webServer() plus object WebServer confuses the compiler
 @main def webServerMain(): Unit = {
-  val config =  loadResolvedConfig().getOrElse(throw new Exception("Could not read config.yaml"))
+  val config = loadResolvedConfig().getOrElse(throw new Exception("Could not read config.yaml"))
   supervised {
     val serverBinding = NettySyncServer(WebServer.serverOptions)
       .port(config.serverPort)
       .host("localhost")
-/*
+      /*
       .addEndpoint(
         xmlEndpoint.handle { _ =>
           // Temporarily fake plain-text input
@@ -111,7 +122,7 @@ object WebServer extends StrictLogging:
           /* Test with XML-invalid character data
           TODO: Once this accepts real input, write real tests
           val inputString = s"Hi, Ronald!${1.toChar}"
-           */
+       */
           if XmlValidator.isUnicodeValid(inputString) then // Validates only for Unicode, not for markup
             val gTa = Vector[TokenEnum](
               Token("The ", "the", 0, 0, Map()),
@@ -142,7 +153,7 @@ object WebServer extends StrictLogging:
           else Left("Input data cannot be expressed as XML (invalid characters)")
         }
       )
-*/
+       */
       .addEndpoint(
         xmlEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -164,13 +175,13 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("xml")))
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("xml")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as XML (invalid characters)")
         }
       )
-
       .addEndpoint(
         teiEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -192,13 +203,13 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("tei")))
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("tei")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as TEI XML (invalid characters)")
         }
       )
-
       .addEndpoint(
         graphMlEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -220,13 +231,13 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("graphml")))
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("graphml")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as GraphML (invalid characters)")
         }
       )
-
       .addEndpoint(
         svgEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -248,13 +259,13 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("svg")))
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("svg")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as SVG (invalid characters)")
         }
       )
-
       .addEndpoint(
         svgrichEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -276,13 +287,13 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("svg-rich")))
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("svg-rich")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as SVG rich (invalid characters)")
         }
       )
-
       .addEndpoint(
         ribbonEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -304,7 +315,8 @@ object WebServer extends StrictLogging:
                 val ar = x.head
                 val gTa = x._2.head
                 val sigla = x._2._2 // TODO: WTF
-                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("ribbon")))
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("ribbon")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as alignment ribbon (invalid characters)")
