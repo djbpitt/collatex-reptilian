@@ -106,8 +106,8 @@ object DisplayFunctions {
 //      case "ribbon" => // API: application/xhtml+xml
 //        emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
 //      // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
-//      case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename) // image/svg+xml
-//      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
+      case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename) // image/svg+xml
+      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
 //      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
 //      case "dot"      => // Create handler // text/plain (legacy); also API: text/vnd.graphviz
       case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
@@ -656,20 +656,24 @@ A [shape="plain"; label=<
       displaySigla: List[Siglum],
       outputBaseFilename: Set[String], // either empty or single string (validated in parseArgs())
       rich: Boolean = false
-  ): Unit =
+  ): Either[String, Flow[Chunk[Byte]]] =
     createRhineDelta(alignment, displaySigla, rich) match
-      case Left(err) =>
-        System.err.println(err)
-      case Right(svg) =>
-        if outputBaseFilename.isEmpty then println(svg) // write to stdout
-        else
-          val base = outputBaseFilename.head
-          val fullPath = {
-            if rich then Paths.get(base + "-rich.svg").toAbsolutePath else Paths.get(base + ".svg").toAbsolutePath
-          }
-          Using.resource(new PrintWriter(fullPath.toFile, "UTF-8")) { writer =>
-            writer.write(svg)
-          }
+      case Right(svg) => // Left(err) falls through; no need to match
+        val stringFlow = Flow
+          .fromValues(
+              svg
+            )
+            val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+            Right(byteFlow)
+//        if outputBaseFilename.isEmpty then println(svg) // write to stdout
+//        else
+//          val base = outputBaseFilename.head
+//          val fullPath = {
+//            if rich then Paths.get(base + "-rich.svg").toAbsolutePath else Paths.get(base + ".svg").toAbsolutePath
+//          }
+//          Using.resource(new PrintWriter(fullPath.toFile, "UTF-8")) { writer =>
+//            writer.write(svg)
+//          }
 
   /** GraphML output
     *
