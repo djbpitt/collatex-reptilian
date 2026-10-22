@@ -2,7 +2,7 @@ package net.collatex.reptilian
 
 import ox.*
 import ox.flow.*
-import sttp.model.HeaderNames
+import sttp.model.{HeaderNames, MediaType}
 import sttp.tapir.*
 import sttp.tapir.server.netty.sync.*
 import sttp.tapir.server.interceptor.log.DefaultServerLog
@@ -70,11 +70,9 @@ val ribbonEndpoint =
     .in("ribbon") // URL ends in .../tei
     .in(jsonPostData)
     .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
-    .out(header(HeaderNames.ContentType, "application/xhtml+xml")) // override default XML mime type of application/xm
+    .out(header(HeaderNames.ContentType, MediaType.ApplicationXhtml.toString())) // override default XML mime type of application/xm
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
-
-
 
 /*val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
   endpoint.get

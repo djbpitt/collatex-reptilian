@@ -595,11 +595,14 @@ object DisplayFunctions {
       outputBaseFilename: Set[String], // either empty or single string (validated in parsArgs())
       htmlExtension: Set[String]
   ): Either[String, Flow[Chunk[Byte]]] =
-    val doctypeHtml: DocType = DocType("html")
+    val xmlDeclaration: String = """<?xml version="1.0" encoding="UTF-8"?>"""
+    // val doctypeHtml: DocType = DocType("html")
+    val doctypeDeclaration: String = """<!DOCTYPE html>"""
     val horizontalRibbons: Node = createHorizontalRibbons(alignment, displaySigla, displayColors, fonts)
+    val finalXml: String = s"""$xmlDeclaration\n$doctypeDeclaration\n${horizontalRibbons.toString}"""
     val stringFlow = Flow
       .fromValues(
-        horizontalRibbons.toString
+        finalXml
       )
     val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
     Right(byteFlow)
