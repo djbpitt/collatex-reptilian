@@ -21,7 +21,7 @@ import scala.collection.mutable.ListBuffer
 // Declarative APIs for endpoints
 val jsonPostData: EndpointIO[JsonDataForAlignment] = jsonBody[JsonDataForAlignment]
 
-val xmlEndpointPost =
+val xmlEndpoint =
   endpoint.post
     .in("xml") // URL ends in .../xml
     .in(jsonPostData)
@@ -29,12 +29,21 @@ val xmlEndpointPost =
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
-val teiEndpointPost =
+val teiEndpoint =
   endpoint.post
     .in("tei") // URL ends in .../tei
     .in(jsonPostData)
     .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
     .out(header(HeaderNames.ContentType, "application/tei+xml")) // override default XML mime type of application/xm
+    .out(header(HeaderNames.CacheControl, "no-cache"))
+    .errorOut(stringBody)
+
+val graphMlEndpoint =
+  endpoint.post
+    .in("graphml") // URL ends in .../tei
+    .in(jsonPostData)
+    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
+    .out(header(HeaderNames.ContentType, "application/graphml+xml")) // override default XML mime type of application/xm
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
@@ -108,7 +117,7 @@ object WebServer extends StrictLogging:
       )
 */
       .addEndpoint(
-        xmlEndpointPost.handle { jsonInput =>
+        xmlEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
             val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
             val results = for { // Gta, List[Siglum]
@@ -136,7 +145,7 @@ object WebServer extends StrictLogging:
       )
 
       .addEndpoint(
-        teiEndpointPost.handle { jsonInput =>
+        teiEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
             val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
             val results = for { // Gta, List[Siglum]
@@ -162,7 +171,36 @@ object WebServer extends StrictLogging:
           else Left("Input data cannot be expressed as TEI XML (invalid characters)")
         }
       )
-/*      .addEndpoint(
+
+      .addEndpoint(
+        graphMlEndpoint.handle { jsonInput =>
+          if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
+            val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
+            val results = for { // Gta, List[Siglum]
+              witnesses <- jsonToWitnessData(cfg, jsonInput)
+              out <- buildFromWitnessData(witnesses, config.defaultColors)
+              root = createAlignmentRibbon(out.head, Set(), false)
+            } yield (
+              root,
+              out
+            ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
+            results match {
+              case Left(_) =>
+                throw new Exception(
+                  "Computing alignment ribbon and Gta failed"
+                ) // TODO: Handle correctly for web service
+              case Right(x) =>
+                val ar = x.head
+                val gTa = x._2.head
+                val sigla = x._2._2 // TODO: WTF
+                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("graphml")))
+                xmlResult
+            }
+          else Left("Input data cannot be expressed as GraphML (invalid characters)")
+        }
+      )
+
+      /*      .addEndpoint(
         txtEndpoint.handle { _ =>
           val e = "Hi, Ronald!"
           Right(

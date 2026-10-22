@@ -110,7 +110,7 @@ object DisplayFunctions {
 //      case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
 //      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
 //      case "dot"      => // Create handler // text/plain (legacy); also API: text/vnd.graphviz
-//      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
+      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
       case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
       case "xml" => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
       case other => Left("Output method not (yet) implemented")
@@ -696,7 +696,7 @@ A [shape="plain"; label=<
       alignment: AlignmentRibbon,
       displaySigla: List[Siglum],
       outputBaseFilename: Set[String]
-  ): Unit =
+  ): Either[String, Flow[Chunk[Byte]]] =
     val keys = Seq(
       <key id="d0" for="node" attr.name="number" attr.type="string"/>,
       <key id="d1" for="node" attr.name="tokens" attr.type="string"/>,
@@ -745,7 +745,7 @@ A [shape="plain"; label=<
       <data key="d5">{edgeData.witIds.map(f => displaySigla(f).value).mkString(", ")}</data>
     </edge>
     )
-    val xmlRoot: Elem =
+    val root: Elem =
       <graphml xmlns="http://graphml.graphdrawing.org/xmlns"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns 
@@ -757,15 +757,20 @@ A [shape="plain"; label=<
              parse.edgeids="canonical"
              parse.order="nodesfirst">{nodes}{edges}</graph>
     </graphml>
-    val prettyPrintedBody = saxonPrettyPrinter(xmlRoot.toString)
-    val declaration = """<?xml version="1.0" encoding="UTF-8"?>"""
-    val fullOutput = s"$declaration\n$prettyPrintedBody" // prepend string instead of XML.write to retain pretty-print
+    val rawXmlString = s"""<?xml version="1.0" encoding="UTF-8"?>\n${root.toString()}"""
+    val finalOutput = saxonPrettyPrinter(rawXmlString)
+    val stringFlow = Flow
+      .fromValues(
+        finalOutput
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
 
-    if outputBaseFilename.isEmpty then println(fullOutput)
-    else
-      val filename = outputBaseFilename.head + "-graphml.xml"
-      val file = os.Path(filename, os.pwd)
-      os.write.over(file, fullOutput)
+//    if outputBaseFilename.isEmpty then println(fullOutput)
+//    else
+//      val filename = outputBaseFilename.head + "-graphml.xml"
+//      val file = os.Path(filename, os.pwd)
+//      os.write.over(file, fullOutput)
 
   /** Helper to create edges for GraphML output
     *
