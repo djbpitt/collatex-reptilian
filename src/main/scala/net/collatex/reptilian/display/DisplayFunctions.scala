@@ -103,9 +103,9 @@ object DisplayFunctions {
 //        emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
 //      case "table-html-v" => // API: application/xhtml+xml
 //        emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-//      case "ribbon" => // API: application/xhtml+xml
-//        emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
-//      // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
+      case "ribbon" => // API: application/xhtml+xml
+        emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
+      // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
       case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename) // image/svg+xml
       case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
 //      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
@@ -594,21 +594,28 @@ object DisplayFunctions {
       fonts: List[Option[String]],
       outputBaseFilename: Set[String], // either empty or single string (validated in parsArgs())
       htmlExtension: Set[String]
-  ): Unit =
+  ): Either[String, Flow[Chunk[Byte]]] =
     val doctypeHtml: DocType = DocType("html")
-    val horizontalRibbons = createHorizontalRibbons(alignment, displaySigla, displayColors, fonts)
-    if outputBaseFilename.isEmpty then // Write to stdout
-      Using.resource(new PrintWriter(Console.out)) { writer =>
-        XML.write(writer, horizontalRibbons, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
-        writer.flush() // For Console.out, optional but harmless
-      }
-    else // Write to file
-      val filename = outputBaseFilename.head + "." + htmlExtension.head // guaranteed single-item set
-      val file = os.Path(filename, os.pwd) // Handles relative or absolute path
-      Using.resource(new PrintWriter(file.toIO)) { writer =>
-        XML.write(writer, horizontalRibbons, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
-        // No need to manually flush/close — Using handles it
-      }
+    val horizontalRibbons: Node = createHorizontalRibbons(alignment, displaySigla, displayColors, fonts)
+    val stringFlow = Flow
+      .fromValues(
+        horizontalRibbons.toString
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
+  
+//    if outputBaseFilename.isEmpty then // Write to stdout
+//      Using.resource(new PrintWriter(Console.out)) { writer =>
+//        XML.write(writer, horizontalRibbons, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
+//        writer.flush() // For Console.out, optional but harmless
+//      }
+//    else // Write to file
+//      val filename = outputBaseFilename.head + "." + htmlExtension.head // guaranteed single-item set
+//      val file = os.Path(filename, os.pwd) // Handles relative or absolute path
+//      Using.resource(new PrintWriter(file.toIO)) { writer =>
+//        XML.write(writer, horizontalRibbons, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
+//        // No need to manually flush/close — Using handles it
+//      }
 
   /** Create SVG representation of Rhine delta (formerly variant graph)
     *

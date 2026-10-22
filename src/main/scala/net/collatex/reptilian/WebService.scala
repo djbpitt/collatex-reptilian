@@ -65,6 +65,15 @@ val svgrichEndpoint =
     .out(header(HeaderNames.CacheControl, "no-cache"))
     .errorOut(stringBody)
 
+val ribbonEndpoint =
+  endpoint.post
+    .in("ribbon") // URL ends in .../tei
+    .in(jsonPostData)
+    .out(streamTextBody(OxStreams)(CodecFormat.Xml()))
+    .out(header(HeaderNames.ContentType, "application/xhtml+xml")) // override default XML mime type of application/xm
+    .out(header(HeaderNames.CacheControl, "no-cache"))
+    .errorOut(stringBody)
+
 
 
 /*val txtEndpoint: Endpoint[Unit, Unit, String, Flow[Chunk[Byte]], OxStreams] =
@@ -273,6 +282,34 @@ object WebServer extends StrictLogging:
                 xmlResult
             }
           else Left("Input data cannot be expressed as SVG rich (invalid characters)")
+        }
+      )
+
+      .addEndpoint(
+        ribbonEndpoint.handle { jsonInput =>
+          if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
+            val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
+            val results = for { // Gta, List[Siglum]
+              witnesses <- jsonToWitnessData(cfg, jsonInput)
+              out <- buildFromWitnessData(witnesses, config.defaultColors)
+              root = createAlignmentRibbon(out.head, Set(), false)
+            } yield (
+              root,
+              out
+            ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
+            results match {
+              case Left(_) =>
+                throw new Exception(
+                  "Computing alignment ribbon and Gta failed"
+                ) // TODO: Handle correctly for web service
+              case Right(x) =>
+                val ar = x.head
+                val gTa = x._2.head
+                val sigla = x._2._2 // TODO: WTF
+                val xmlResult = displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("ribbon")))
+                xmlResult
+            }
+          else Left("Input data cannot be expressed as alignment ribbon (invalid characters)")
         }
       )
 
