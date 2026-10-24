@@ -107,12 +107,11 @@ object DisplayFunctions {
       case "dot"      => emitDot(root, displaySigla, outputBaseFilename) // text/vnd.graphviz
       case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename) // image/svg+xml
       case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
-//      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
-//      case "dot"      => // Create handler // text/plain (legacy); also API: text/vnd.graphviz
-      case "graphml" => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
-      case "tei"     => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
-      case "xml"     => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
-      case other     => Left("Output method not (yet) implemented")
+      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
+      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
+      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
+      case "xml"      => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
+      case other      => Left("Output method not (yet) implemented")
     }
 
   /** Helper function (pads right with spaces) for plain text table output
@@ -863,7 +862,7 @@ A [shape="plain"; label=<
       alignment: AlignmentRibbon,
       displaySigla: List[Siglum],
       outputBaseFilename: Set[String]
-  ): Unit =
+  ): Either[String, Flow[Chunk[Byte]]] =
 
     val allWitIds = displaySigla.indices
     val witnessesJson = displaySigla.map(_.value)
@@ -898,12 +897,19 @@ A [shape="plain"; label=<
     )
 
     val renderedJson = ujson.write(jsonRoot, indent = 2)
+    val stringFlow = Flow
+      .fromValues(
+        renderedJson
+      )
 
-    if outputBaseFilename.isEmpty then println(renderedJson)
-    else
-      val filename = outputBaseFilename.head + ".json"
-      val file = os.Path(filename, os.pwd)
-      os.write.over(file, renderedJson)
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
+
+//    if outputBaseFilename.isEmpty then println(renderedJson)
+//    else
+//      val filename = outputBaseFilename.head + ".json"
+//      val file = os.Path(filename, os.pwd)
+//      os.write.over(file, renderedJson)
 
   /** TEI parallel segmentation
     *
