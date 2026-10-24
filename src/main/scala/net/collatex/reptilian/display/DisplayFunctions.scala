@@ -29,7 +29,8 @@ import net.collatex.reptilian.{
   WitId,
   WitnessReadings,
   createHorizontalRibbons,
-  createRhineDelta
+  createRhineDelta,
+  createDotString
 }
 import ox.Chunk
 import ox.flow.Flow
@@ -103,14 +104,15 @@ object DisplayFunctions {
       case "ribbon" => // API: application/xhtml+xml
         emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
       // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
+      case "dot"      => emitDot(root, displaySigla, outputBaseFilename) // text/vnd.graphviz
       case "svg"      => emitSvgGraph(root, displaySigla, outputBaseFilename) // image/svg+xml
       case "svg-rich" => emitSvgGraph(root, displaySigla, outputBaseFilename, true) // API: image/svg+xml
 //      case "json"     => emitJson(root, displaySigla, outputBaseFilename) // application/json
 //      case "dot"      => // Create handler // text/plain (legacy); also API: text/vnd.graphviz
-      case "graphml"  => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
-      case "tei"      => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
-      case "xml" => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
-      case other => Left("Output method not (yet) implemented")
+      case "graphml" => emitGraphMl(root, displaySigla, outputBaseFilename) // application/graphml+xml
+      case "tei"     => emitTeiXml(root, displaySigla, outputBaseFilename) // application/tei+xml
+      case "xml"     => emitXmlFlow(root, displaySigla, outputBaseFilename) // API: CollateX XML, application/xml
+      case other     => Left("Output method not (yet) implemented")
     }
 
   /** Helper function (pads right with spaces) for plain text table output
@@ -448,8 +450,6 @@ object DisplayFunctions {
     val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
     Right(byteFlow)
 
-
-
   //    val doctypeHtml = DocType("html")
 //    if outputBaseFilename.isEmpty then
 //      Using.resource(new PrintWriter(Console.out)) { writer =>
@@ -611,7 +611,7 @@ object DisplayFunctions {
       )
     val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
     Right(byteFlow)
-  
+
 //    if outputBaseFilename.isEmpty then // Write to stdout
 //      Using.resource(new PrintWriter(Console.out)) { writer =>
 //        XML.write(writer, horizontalRibbons, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
@@ -624,6 +624,21 @@ object DisplayFunctions {
 //        XML.write(writer, horizontalRibbons, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
 //        // No need to manually flush/close — Using handles it
 //      }
+
+  private[display] def emitDot(
+      alignment: AlignmentRibbon,
+      displaySigla: List[Siglum],
+      outputBaseFilename: Set[String], // either empty or single string (validated in parseArgs())
+      rich: Boolean = false
+  ): Either[String, Flow[Chunk[Byte]]] = {
+    val dot = createDotString(alignment, displaySigla, rich)
+    val stringFlow = Flow
+      .fromValues(
+        dot
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
+  }
 
   /** Create SVG representation of Rhine delta (formerly variant graph)
     *
@@ -676,10 +691,11 @@ A [shape="plain"; label=<
       case Right(svg) => // Left(err) falls through; no need to match
         val stringFlow = Flow
           .fromValues(
-              svg
-            )
-            val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
-            Right(byteFlow)
+            svg
+          )
+        val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+        Right(byteFlow)
+      case Left(error) => Left(error)
 //        if outputBaseFilename.isEmpty then println(svg) // write to stdout
 //        else
 //          val base = outputBaseFilename.head

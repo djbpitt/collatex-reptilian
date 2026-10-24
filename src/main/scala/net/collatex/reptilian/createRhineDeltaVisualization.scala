@@ -41,7 +41,7 @@ def createNodes(
   *   See documentation of start, above.
   * @param displaySigla
   *   Used here only for its size to create seed rightmost for all witnesses. WitId (Int) values in AlignmentRibbon are
-  *   replaced by user-supplied displaySigla (Siglum) values elsehwere.
+  *   replaced by user-supplied displaySigla (Siglum) values elsewhere.
   * @return
   *   Vector of EdgeProperties instances
   */
@@ -158,7 +158,7 @@ def createDot(
 
 /** Spawn process to transform Graphviz dot file to SVG (as String)
   *
-  * Graphviz dot must be installed and either on system path or specified as a `GRAPHVIZ_DOT` environemnt variable
+  * Graphviz dot must be installed and either on system path or specified as a `GRAPHVIZ_DOT` environment variable
   *
   * The SVG is created as String, rather than an XML-related datatype, because it’s created by Graphviz dot as a String.
   *
@@ -199,6 +199,20 @@ def createSvg(dotFile: String, rich: Boolean = false): Either[String, String] =
   if exitCode == 0 then Right(output.toString)
   else Left(s"Graphviz error: $error")
 
+def createDotString(
+    ar: AlignmentRibbon,
+    displaySigla: List[Siglum],
+    rich: Boolean = false
+): String =
+  val allWitIds = displaySigla.indices.toSet
+  val start = NodeProperties("-1.0", allWitIds, "[Start]", TerminalNode)
+  val end = NodeProperties(Int.MaxValue.toString, allWitIds, "[End]", TerminalNode)
+  val nodes = createNodes(ar) // Extract, label, and flatten reading groups into vector of NodeProperty
+  val edges = createEdges(nodes, start, end, displaySigla) // Create edges as vector of EdgeProperty
+  val dotFile = createDot(start +: nodes :+ end, edges, displaySigla, rich)
+  // System.err.println(dotFile)
+  dotFile
+
 /** Create Rhine delta representation as SVG (entry point)
   *
   * @param ar
@@ -236,16 +250,10 @@ def createRhineDelta(
     ar: AlignmentRibbon,
     displaySigla: List[Siglum],
     rich: Boolean = false
-): Either[String, String] =
-  val allWitIds = displaySigla.indices.toSet
-  val start = NodeProperties("-1.0", allWitIds, "[Start]", TerminalNode)
-  val end = NodeProperties(Int.MaxValue.toString, allWitIds, "[End]", TerminalNode)
-  val nodes = createNodes(ar) // Extract, label, and flatten reading groups into vector of NodeProperty
-  val edges = createEdges(nodes, start, end, displaySigla) // Create edges as vector of EdgeProperty
-  val dotFile = createDot(start +: nodes :+ end, edges, displaySigla, rich)
-  // System.err.println(dotFile)
+): Either[String,String] =
+  val dotFile = createDotString(ar, displaySigla, rich)
   createSvg(dotFile, rich)
-
+  
 // gId is stringified Int.Int, e.g. 2.5
 // gId is for development, the intersection of the witnesses on the source and target of an edge is the edge label
 type GId = String
