@@ -28,9 +28,9 @@ import net.collatex.reptilian.{
   TokenRange,
   WitId,
   WitnessReadings,
+  createDotString,
   createHorizontalRibbons,
-  createRhineDelta,
-  createDotString
+  createSvg
 }
 import ox.Chunk
 import ox.flow.Flow
@@ -640,25 +640,6 @@ object DisplayFunctions {
     Right(byteFlow)
   }
 
-  /** Create SVG representation of Rhine delta (formerly variant graph)
-    *
-    * --format svg, --format svg-rich
-    *
-    * svg format shows only 'n' value of tokens; svg-rich format shows t values
-    *
-    * @param alignment
-    *   AlignmentRibbon; children property is a ListBuffer of AlignmentPoint instances (but defined as AlignmentUnit)
-    * @param displaySigla
-    *   List of Sigla in output order (List[Siglum])
-    * @param outputBaseFilename
-    *   Base filename for file-system output. If empty, output goes to stdout. If present, '.svg' is appended to
-    *   construct the output filename, e.g., 'foo' becomes 'foo.svg'.
-    * @param rich
-    *   Boolean; true = rich SVG output (t values), false (default) = traditional SVG output (n values)
-    *
-    * @return
-    *   None. Write SVG document to filesystem or stdout
-    */
   /* Sample output
 #https://graphviz.org/doc/info/shapes.html#html
 # https://www.renenyffenegger.ch/notes/tools/Graphviz/attributes/label/HTML-like/index
@@ -687,7 +668,8 @@ A [shape="plain"; label=<
       outputBaseFilename: Set[String], // either empty or single string (validated in parseArgs())
       rich: Boolean = false
   ): Either[String, Flow[Chunk[Byte]]] =
-    createRhineDelta(alignment, displaySigla, rich) match
+    val dotFile = createDotString(alignment, displaySigla, rich)
+    createSvg(dotFile, rich) match
       case Right(svg) => // Left(err) falls through; no need to match
         val stringFlow = Flow
           .fromValues(

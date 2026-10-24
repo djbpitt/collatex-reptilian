@@ -213,47 +213,6 @@ def createDotString(
   // System.err.println(dotFile)
   dotFile
 
-/** Create Rhine delta representation as SVG (entry point)
-  *
-  * @param ar
-  *   AlignmentRibbon
-  * @param displaySigla
-  *   User-supplied sigla as List[Siglum]
-  * @param rich
-  *   Boolean; true = rich SVG output (t values), false (default) = traditional SVG output (n values)
-  *
-  * @return
-  *   Rhine delta SVG representation as String, created by Graphviz
-  */
-/* Sample rich output
-# https://www.renenyffenegger.ch/notes/tools/Graphviz/attributes/label/HTML-like/index
-digraph G {
-A [shape="plain"; label=<
-    <table cellspacing="0">
-        <tr>
-            <td align="left" bgcolor="lightblue">n</td>
-            <td align="left" bgcolor="lightblue"><font face="Bukyvede">greeting</font></td>
-        </tr>
-        <tr>
-            <td align="left" bgcolor="gainsboro">59, 61</td>
-            <td align="left"><font face="Bukyvede">Приветъ</font></td>
-        </tr>
-        <tr>
-            <td align="left" bgcolor="gainsboro">66, 69</td>
-            <td align="left"><font face="Bukyvede">Hello</font></td>
-        </tr>
-    </table>
->]
-}
- * */
-def createRhineDelta(
-    ar: AlignmentRibbon,
-    displaySigla: List[Siglum],
-    rich: Boolean = false
-): Either[String,String] =
-  val dotFile = createDotString(ar, displaySigla, rich)
-  createSvg(dotFile, rich)
-  
 // gId is stringified Int.Int, e.g. 2.5
 // gId is for development, the intersection of the witnesses on the source and target of an edge is the edge label
 type GId = String
