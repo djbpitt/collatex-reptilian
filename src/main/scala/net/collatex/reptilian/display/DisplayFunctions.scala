@@ -88,9 +88,9 @@ object DisplayFunctions {
     formats.head match {
       // TODO: (x)html formats should return xhtml vs html, with different media types, based on filename extension
       // TODO: XML formats should have switch to include/suppress XML declaration
-//      case "table" | "table-h" => // API: ascii table, text/plain
-//        // TODO: Call method to create sink with correct filename extension (if file output)
-//        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
+      case "table" | "table-h" => // API: ascii table, text/plain
+        // TODO: Call method to create sink with correct filename extension (if file output)
+        emitTableHorizontal(root, displaySigla, gTa, outputBaseFilename)
       // TODO: Remove "stream" and "flow" methods
 //      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
       case "flow" => emitTableHorizontalFlow(root, displaySigla, gTa, outputBaseFilename)
@@ -255,7 +255,7 @@ object DisplayFunctions {
       displaySigla: List[Siglum],
       gTa: Vector[TokenEnum],
       outputBaseFilename: Set[String]
-  ): Unit =
+  ): Either[String, Flow[Chunk[Byte]]] =
 
     val allWitIds = displaySigla.indices
     val table: ListBuffer[IndexedSeq[String]] = alignment.children.map { e =>
@@ -266,32 +266,31 @@ object DisplayFunctions {
           .tString
       }
     }
-
-    if table.isEmpty then
-      System.err.println("Empty table (should not happen)")
-      return
-
     val numRows = allWitIds.size
     val numCols = table.size
-
     val rotated = (0 until numRows).map { rowIdx =>
       displaySigla(rowIdx).value +: table.map(_(rowIdx))
     }
-
     val colWidths = (0 to numCols).map { colIdx =>
       rotated.map(row => row(colIdx).length).max
     }
-
-    def renderTable(writer: PrintWriter): Unit =
-      for row <- rotated do
+    val rows =
+      rotated.map { row =>
         val padded = row.zip(colWidths).map { (cell, w) => padCell(cell, w) }
-        writer.println(padded.mkString(" | "))
+        padded.mkString(" | ")
+      }
+    val stringFlow = Flow
+      .fromValues(
+        rows.mkString("\n")
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
 
-    if outputBaseFilename.isEmpty then Using.resource(new PrintWriter(Console.out)) { writer => renderTable(writer) }
-    else
-      val filename = outputBaseFilename.head + "-h.txt"
-      val file = os.Path(filename, os.pwd) // correctly resolve relative paths
-      Using.resource(new PrintWriter(file.toIO)) { writer => renderTable(writer) }
+//    if outputBaseFilename.isEmpty then Using.resource(new PrintWriter(Console.out)) { writer => renderTable(writer) }
+//    else
+//      val filename = outputBaseFilename.head + "-h.txt"
+//      val file = os.Path(filename, os.pwd) // correctly resolve relative paths
+//      Using.resource(new PrintWriter(file.toIO)) { writer => renderTable(writer) }
 
   /** Vertical plain text table; rows as alignment points, columns as witnesses
     *
