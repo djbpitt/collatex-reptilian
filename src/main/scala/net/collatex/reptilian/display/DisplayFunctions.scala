@@ -11,7 +11,7 @@ val Svg: CodecFormat = new CodecFormat {
 
 /* Distribution of responsibilities
  *
- * User chooses output format, which dictates mimetype/filename-extension based on contet
+ * User chooses output format, which dictates mimetype/filename-extension based on content
  * Emitter does not need to know mimetype or extension (that is, context), which is handled by caller
  * Give writer to emitter so that it doesn't have to return
  *
@@ -20,10 +20,6 @@ val Svg: CodecFormat = new CodecFormat {
  * are not very functional.
  * */
 
-import cats.effect.IO
-import cats.syntax.all.*
-import fs2.io.file.{Files, Path}
-import fs2.{Pipe, Stream, text}
 import net.collatex.reptilian.{
   AlignmentPoint,
   AlignmentRibbon,
@@ -36,24 +32,24 @@ import net.collatex.reptilian.{
   createRhineDelta
 }
 import ox.Chunk
-import ox.flow.{Flow, FlowStage}
+import ox.flow.Flow
 
-import scala.util.Using
-import scala.xml.*
-import scala.xml.dtd.DocType
-import java.nio.file.Paths
 import scala.annotation.{tailrec, unused}
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.ListBuffer
+import scala.util.Using
+import scala.xml.*
+import scala.xml.dtd.DocType
 
 // JSON output
 import ujson.*
 
 // XML output, using Saxon for pretty-printing because Scala XML pretty-printing is broken
-import net.sf.saxon.s9api.{Processor, Serializer, XdmNode, DocumentBuilder}
-import scala.xml.{Elem, Node}
+import net.sf.saxon.s9api.{DocumentBuilder, Processor, Serializer, XdmNode}
+
 import java.io.{PrintWriter, StringReader, StringWriter}
 import javax.xml.transform.stream.StreamSource
+import scala.xml.{Elem, Node}
 
 object DisplayFunctions {
 
@@ -99,8 +95,9 @@ object DisplayFunctions {
       case "flow" => emitTableHorizontalFlow(root, displaySigla, gTa, outputBaseFilename)
 //      case "table-v" // API: ascii table, text/plain
 //        => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
-//      case "table-html-h" => // API: application/xhtml+xml
-//        emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+      case "table-html-h" => // API: application/xhtml+xml
+        // TODO: Support user-specified colors and fonts for HTML tables (horizontal and vertical)
+        emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
 //      case "table-html-v" => // API: application/xhtml+xml
 //        emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
       case "ribbon" => // API: application/xhtml+xml
@@ -380,10 +377,9 @@ object DisplayFunctions {
       alignment: AlignmentRibbon,
       displaySigla: List[Siglum],
       gTa: Vector[TokenEnum],
-      outputBaseFilename: Set[String], // validated: empty or exactly one value
+      outputBaseFilename: Set[String],
       htmlExtension: Set[String] // validated: exactly one value ('html' or 'xhtml')
-  ): Unit =
-
+  ): Either[String, Flow[Chunk[Byte]]] =
     val allWitIds = displaySigla.indices
     val tableContent = alignment.children.map { e =>
       allWitIds.map { f =>
@@ -393,17 +389,11 @@ object DisplayFunctions {
           .tString
       }
     }
-
-    if tableContent.isEmpty then
-      System.err.println("Empty table (should not happen)")
-      return
-
     val numRows = allWitIds.size
     @unused val numCols = tableContent.size // needed only if thead includes alignment-point numbering
     val rotated = (0 until numRows).map { rowIdx =>
       tableContent.map(_(rowIdx))
     }
-
     val htmlTable =
       <table>
       <!-- <thead>
@@ -433,7 +423,6 @@ object DisplayFunctions {
       }
       </tbody>
     </table>
-
     val htmlDoc =
       <html xmlns="http://www.w3.org/1999/xhtml">
       <head>
@@ -449,19 +438,29 @@ object DisplayFunctions {
         <h2>Alignment Table (Witnesses as Rows)</h2>{htmlTable}
       </body>
     </html>
+    val xmlDeclaration: String = """<?xml version="1.0" encoding="UTF-8"?>"""
+    val doctypeDeclaration: String = """<!DOCTYPE html>"""
+    val finalXml: String = s"""$xmlDeclaration\n$doctypeDeclaration\n${htmlDoc.toString}"""
+    val stringFlow = Flow
+      .fromValues(
+        finalXml
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
 
-    val doctypeHtml = DocType("html")
 
-    if outputBaseFilename.isEmpty then
-      Using.resource(new PrintWriter(Console.out)) { writer =>
-        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
-      }
-    else
-      val filename = outputBaseFilename.head + "-h." + htmlExtension.head
-      val file = os.Path(filename, os.pwd)
-      Using.resource(new PrintWriter(file.toIO)) { writer =>
-        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
-      }
+
+  //    val doctypeHtml = DocType("html")
+//    if outputBaseFilename.isEmpty then
+//      Using.resource(new PrintWriter(Console.out)) { writer =>
+//        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
+//      }
+//    else
+//      val filename = outputBaseFilename.head + "-h." + htmlExtension.head
+//      val file = os.Path(filename, os.pwd)
+//      Using.resource(new PrintWriter(file.toIO)) { writer =>
+//        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
+//      }
 
   /** Vertical HTML table; rows as alignment points, columns as witnesses
     *
