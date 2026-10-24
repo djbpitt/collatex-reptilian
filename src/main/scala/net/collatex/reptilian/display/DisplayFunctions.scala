@@ -98,8 +98,8 @@ object DisplayFunctions {
       case "table-html-h" => // API: application/xhtml+xml
         // TODO: Support user-specified colors and fonts for HTML tables (horizontal and vertical)
         emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
-//      case "table-html-v" => // API: application/xhtml+xml
-//        emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
+      case "table-html-v" => // API: application/xhtml+xml
+        emitTableVerticalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
       case "ribbon" => // API: application/xhtml+xml
         emitAlignmentRibbon(root, displaySigla, displayColors, fonts, outputBaseFilename, htmlExtension)
       // Both Rhine delta formats use same output function with different values of Boolean 'rich' parameter
@@ -491,7 +491,7 @@ object DisplayFunctions {
       gTa: Vector[TokenEnum],
       outputBaseFilename: Set[String], // validated: empty or exactly one value
       htmlExtension: Set[String] // validated: exactly one value
-  ): Unit =
+  ): Either[String, Flow[Chunk[Byte]]] =
 
     val allWitIds = displaySigla.indices
     val tableContent = alignment.children.map { e =>
@@ -502,10 +502,6 @@ object DisplayFunctions {
           .tString
       }
     }
-
-    if tableContent.isEmpty then
-      System.err.println("Empty table (should not happen)")
-      return
 
     val htmlTable =
       <table>
@@ -551,18 +547,28 @@ object DisplayFunctions {
       </body>
     </html>
 
-    val doctypeHtml = DocType("html")
+    val xmlDeclaration: String = """<?xml version="1.0" encoding="UTF-8"?>"""
+    val doctypeDeclaration: String = """<!DOCTYPE html>"""
+    val finalXml: String = s"""$xmlDeclaration\n$doctypeDeclaration\n${htmlDoc.toString}"""
+    val stringFlow = Flow
+      .fromValues(
+        finalXml
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
 
-    if outputBaseFilename.isEmpty then
-      Using.resource(new PrintWriter(Console.out)) { writer =>
-        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
-      }
-    else
-      val filename = outputBaseFilename.head + "-v." + htmlExtension.head
-      val file = os.Path(filename, os.pwd)
-      Using.resource(new PrintWriter(file.toIO)) { writer =>
-        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
-      }
+  //    val doctypeHtml = DocType("html")
+//
+//    if outputBaseFilename.isEmpty then
+//      Using.resource(new PrintWriter(Console.out)) { writer =>
+//        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
+//      }
+//    else
+//      val filename = outputBaseFilename.head + "-v." + htmlExtension.head
+//      val file = os.Path(filename, os.pwd)
+//      Using.resource(new PrintWriter(file.toIO)) { writer =>
+//        XML.write(writer, htmlDoc, "UTF-8", xmlDecl = true, doctype = doctypeHtml)
+//      }
 
   /** Create alignment ribbon visualization (HTML and SVG)
     *
