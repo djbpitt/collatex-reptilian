@@ -94,8 +94,9 @@ object DisplayFunctions {
       // TODO: Remove "stream" and "flow" methods
 //      case "stream" => emitTableHorizontalStream(root, displaySigla, gTa, outputBaseFilename)
       case "flow" => emitTableHorizontalFlow(root, displaySigla, gTa, outputBaseFilename)
-//      case "table-v" // API: ascii table, text/plain
-//        => emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
+      case "table-v" // API: ascii table, text/plain
+          =>
+        emitTableVertical(root, displaySigla, gTa, outputBaseFilename)
       case "table-html-h" => // API: application/xhtml+xml
         // TODO: Support user-specified colors and fonts for HTML tables (horizontal and vertical)
         emitTableHorizontalHTML(root, displaySigla, gTa, outputBaseFilename, htmlExtension)
@@ -315,8 +316,7 @@ object DisplayFunctions {
       displaySigla: List[Siglum],
       gTa: Vector[TokenEnum],
       outputBaseFilename: Set[String]
-  ): Unit =
-
+  ): Either[String, Flow[Chunk[Byte]]] =
     val allWitIds = displaySigla.indices
     val table = alignment.children.map { e =>
       allWitIds.map { f =>
@@ -326,29 +326,34 @@ object DisplayFunctions {
           .tString
       }
     }
-
-    if table.isEmpty then
-      System.err.println("Empty table (should not happen)")
-      return
-
     val header = displaySigla.map(_.value)
     val fullTable = header +: table
-
     val numCols = allWitIds.size
     val colWidths = (0 until numCols).map { colIdx =>
       fullTable.map(row => row(colIdx).length).max
     }
-
-    def renderTable(writer: PrintWriter): Unit =
-      for row <- fullTable do
+    val rows =
+      fullTable.map { row =>
         val padded = row.zip(colWidths).map { (cell, w) => padCell(cell, w) }
-        writer.println(padded.mkString(" | "))
+        padded.mkString("|")
+      }
+    val stringFlow = Flow
+      .fromValues(
+        rows.mkString("\n")
+      )
+    val byteFlow = stringFlow.map(s => Chunk.fromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+    Right(byteFlow)
 
-    if outputBaseFilename.isEmpty then Using.resource(new PrintWriter(Console.out)) { writer => renderTable(writer) }
-    else
-      val filename = outputBaseFilename.head + "-v.txt"
-      val file = os.Path(filename, os.pwd)
-      Using.resource(new PrintWriter(file.toIO)) { writer => renderTable(writer) }
+  //    def renderTable(writer: PrintWriter): Unit =
+//      for row <- fullTable do
+//        val padded = row.zip(colWidths).map { (cell, w) => padCell(cell, w) }
+//        writer.println(padded.mkString(" | "))
+//
+//    if outputBaseFilename.isEmpty then Using.resource(new PrintWriter(Console.out)) { writer => renderTable(writer) }
+//    else
+//      val filename = outputBaseFilename.head + "-v.txt"
+//      val file = os.Path(filename, os.pwd)
+//      Using.resource(new PrintWriter(file.toIO)) { writer => renderTable(writer) }
 
   /** Horizontal HTML table; rows as witnesses, columns as alignment points
     *

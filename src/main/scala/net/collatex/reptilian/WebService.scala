@@ -128,9 +128,15 @@ val tableHEndpointbase =
     .errorOut(stringBody)
 
 val tableEndpoint = tableHEndpointbase.in("table")
-val tableHEndpoint  = tableHEndpointbase.in("table-h")
+val tableHEndpoint = tableHEndpointbase.in("table-h")
 
-//.in("table") // URL ends in .../table
+val tableVEndpoint =
+  endpoint.post
+    .in("table-v")
+    .in(jsonPostData)
+    .out(streamTextBody(OxStreams)(CodecFormat.TextPlain())) // mime type text/plain
+    .out(header(HeaderNames.CacheControl, "no-cache"))
+    .errorOut(stringBody)
 
 object WebServer extends StrictLogging:
   val log: Logger = logger // Alias because logger property is protected
@@ -502,7 +508,6 @@ object WebServer extends StrictLogging:
           else Left("Input data cannot be expressed as JSON invalid characters)")
         }
       )
-
       .addEndpoint(
         tableEndpoint.handle { jsonInput =>
           if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -526,6 +531,34 @@ object WebServer extends StrictLogging:
                 val sigla = x._2._2 // TODO: WTF
                 val xmlResult =
                   displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("table")))
+                xmlResult
+            }
+          else Left("Input data cannot be expressed as JSON invalid characters)")
+        }
+      )
+      .addEndpoint(
+        tableVEndpoint.handle { jsonInput =>
+          if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
+            val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
+            val results = for { // Gta, List[Siglum]
+              witnesses <- jsonToWitnessData(cfg, jsonInput)
+              out <- buildFromWitnessData(witnesses, config.defaultColors)
+              root = createAlignmentRibbon(out.head, Set(), false)
+            } yield (
+              root,
+              out
+            ) // (out = Vector[TokenEnum] (Gta), List[Siglum], List[colors], List[fonts])
+            results match {
+              case Left(_) =>
+                throw new Exception(
+                  "Computing alignment ribbon and Gta failed"
+                ) // TODO: Handle correctly for web service
+              case Right(x) =>
+                val ar = x.head
+                val gTa = x._2.head
+                val sigla = x._2._2 // TODO: WTF
+                val xmlResult =
+                  displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("table-v")))
                 xmlResult
             }
           else Left("Input data cannot be expressed as JSON invalid characters)")
