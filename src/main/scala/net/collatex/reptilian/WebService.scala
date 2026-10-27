@@ -15,6 +15,7 @@ import net.collatex.reptilian.display.DisplayFunctions.*
 import sttp.shared.Identity
 import sttp.tapir.Schema
 import sttp.tapir.server.ServerEndpoint
+import sttp.tapir.server.netty.sync
 implicit val ujsonValueSchema: Schema[ujson.Value] = Schema.any
 import sttp.tapir.CodecFormat
 import sttp.model.MediaType
@@ -197,33 +198,52 @@ object WebServer extends StrictLogging:
     }
   }
 
+  case class endpointToBind(
+      endpointId: sttp.tapir.endpoint.EndpointType[
+        Unit, // URL endpoint (e.g., .in("xml"))
+        JsonDataForAlignment, // JSON input supplied by caller (.in(jsonPostData))
+        String, // set codec and mediaType (e.g., .out(streamTextBody(OxStreams)(CodecFormat.Xml())))
+        OxStreams.BinaryStream, // fixed header for cache control (.out(header(HeaderNames.CacheControl, "no-cache")))
+        OxStreams // fixed error handler (.errorOut(stringBody))
+      ],
+      displayString: String
+  )
+
+  val endpointsToBind: Seq[endpointToBind] =
+    Seq(
+      endpointToBind(xmlEndpoint, "xml"),
+      endpointToBind(teiEndpoint, "tei"),
+      endpointToBind(graphMlEndpoint, "graphml"),
+      endpointToBind(svgEndpoint, "svg"),
+      endpointToBind(svgrichEndpoint, "svg-rich"),
+      endpointToBind(ribbonEndpoint, "ribbon"),
+      endpointToBind(htmlHEndpoint, "table-html-h"),
+      endpointToBind(htmlVEndpoint, "table-html-v"),
+      endpointToBind(dotEndpoint, "dot"),
+      endpointToBind(jsonEndpoint, "json"),
+      endpointToBind(tableHEndpoint, "table-h"),
+      endpointToBind(tableEndpoint, "table"),
+      endpointToBind(tableVEndpoint, "table-v")
+    )
+
   supervised {
-    val serverBinding = NettySyncServer(WebServer.serverOptions)
-      .port(config.serverPort)
-      .host("localhost")
-      .addEndpoint(addEndpointTemplate(xmlEndpoint, "xml"))
-      .addEndpoint(addEndpointTemplate(teiEndpoint, "tei"))
-      .addEndpoint(addEndpointTemplate(graphMlEndpoint, "graphml"))
-      .addEndpoint(addEndpointTemplate(svgEndpoint, "svg"))
-      .addEndpoint(addEndpointTemplate(svgrichEndpoint, "svg-rich"))
-      .addEndpoint(addEndpointTemplate(ribbonEndpoint, "ribbon"))
-      .addEndpoint(addEndpointTemplate(htmlHEndpoint, "table-html-h"))
-      .addEndpoint(addEndpointTemplate(htmlVEndpoint, "table-html-v"))
-      .addEndpoint(addEndpointTemplate(dotEndpoint, "dot"))
-      .addEndpoint(addEndpointTemplate(jsonEndpoint, "json"))
-      .addEndpoint(addEndpointTemplate(tableHEndpoint, "table-h"))
-      .addEndpoint(addEndpointTemplate(tableEndpoint, "table"))
-      .addEndpoint(addEndpointTemplate(tableVEndpoint, "table-v"))
-      .start()
+      val serverBinding =
+        endpointsToBind
+          .foldLeft(NettySyncServer(WebServer.serverOptions))((acc: NettySyncServer, newItem: endpointToBind) =>
+            acc.addEndpoint(addEndpointTemplate(newItem.endpointId, newItem.displayString))
+          )
+          .port(config.serverPort)
+          .host("localhost")
+          .start()
 
-    // Access the port in NettySyncServerBinding
-    val boundPort = serverBinding.port
-    val boundHost = serverBinding.hostName
+      // Access the port in NettySyncServerBinding
+      val boundPort = serverBinding.port
+      val boundHost = serverBinding.hostName
 
-    // println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
-    WebServer.log.info(s"Server started → http://$boundHost:$boundPort")
+      // println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
+      WebServer.log.info(s"Server started → http://$boundHost:$boundPort")
 
-    // Keep the supervised scope alive until process termination
-    never
+      // Keep the supervised scope alive until process termination
+      never
   }
 }
