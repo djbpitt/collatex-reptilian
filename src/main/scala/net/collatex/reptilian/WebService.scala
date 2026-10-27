@@ -158,11 +158,19 @@ object WebServer extends StrictLogging:
 
 @main def webServerMain(): Unit = {
   val config = loadResolvedConfig().getOrElse(throw new Exception("Could not read config.yaml"))
+  val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
 
-  def addEndpointTemplate(): ServerEndpoint.Full[Unit, Unit, JsonDataForAlignment, String, Flow[Chunk[Byte]], OxStreams, Identity] = {
-    xmlEndpoint.handle { jsonInput =>
+  def addEndpointTemplate(
+      endpointToBind: sttp.tapir.endpoint.EndpointType[
+        Unit, // URL endpoint (e.g., .in("xml"))
+        JsonDataForAlignment, // JSON input supplied by caller (.in(jsonPostData))
+        String, // set codec and mediaType (e.g., .out(streamTextBody(OxStreams)(CodecFormat.Xml())))
+        OxStreams.BinaryStream, // fixed header for cache control (.out(header(HeaderNames.CacheControl, "no-cache")))
+        OxStreams // fixed error handler (.errorOut(stringBody))
+      ]
+  ): ServerEndpoint.Full[Unit, Unit, JsonDataForAlignment, String, OxStreams.BinaryStream, OxStreams, Identity] = {
+    endpointToBind.handle { jsonInput =>
       if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
-        val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
         val results = for { // Gta, List[Siglum]
           witnesses <- jsonToWitnessData(cfg, jsonInput)
           out <- buildFromWitnessData(witnesses, config.defaultColors)
@@ -174,7 +182,7 @@ object WebServer extends StrictLogging:
         results match {
           case Left(_) =>
             throw new Exception(
-              "Computing alignment ribbon and Gta failed"
+              "Computing alignment and Gta failed"
             ) // TODO: Handle correctly for web service
           case Right(x) =>
             val ar = x.head
@@ -193,7 +201,7 @@ object WebServer extends StrictLogging:
       .port(config.serverPort)
       .host("localhost")
       .addEndpoint(
-        addEndpointTemplate()
+        addEndpointTemplate(xmlEndpoint)
       )
       .addEndpoint(
         teiEndpoint.handle { jsonInput =>
