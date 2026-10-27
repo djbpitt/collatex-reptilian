@@ -162,16 +162,9 @@ object WebServer extends StrictLogging:
   val cfg = BuildConfig.Default // TODO: depends on default config.yaml filename
 
   def addEndpointTemplate(
-      endpointToBind: sttp.tapir.endpoint.EndpointType[
-        Unit, // URL endpoint (e.g., .in("xml"))
-        JsonDataForAlignment, // JSON input supplied by caller (.in(jsonPostData))
-        String, // set codec and mediaType (e.g., .out(streamTextBody(OxStreams)(CodecFormat.Xml())))
-        OxStreams.BinaryStream, // fixed header for cache control (.out(header(HeaderNames.CacheControl, "no-cache")))
-        OxStreams // fixed error handler (.errorOut(stringBody))
-      ],
-      dispatcher: String
+      newItem: endpointToBind
   ): ServerEndpoint.Full[Unit, Unit, JsonDataForAlignment, String, OxStreams.BinaryStream, OxStreams, Identity] = {
-    endpointToBind.handle { jsonInput =>
+    newItem.endpointId.handle { jsonInput =>
       if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
         val results = for { // Gta, List[Siglum]
           witnesses <- jsonToWitnessData(cfg, jsonInput)
@@ -191,7 +184,14 @@ object WebServer extends StrictLogging:
             val gTa = x._2.head
             val sigla = x._2._2 // TODO: WTF
             val xmlResult =
-              displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set(dispatcher)))
+              displayDispatch(
+                ar,
+                gTa,
+                sigla,
+                config.defaultColors,
+                List(),
+                Map("--format" -> Set(newItem.displayString))
+              )
             xmlResult
         }
       else Left("Input data cannot be expressed as XML (invalid characters)")
@@ -227,23 +227,23 @@ object WebServer extends StrictLogging:
     )
 
   supervised {
-      val serverBinding =
-        endpointsToBind
-          .foldLeft(NettySyncServer(WebServer.serverOptions))((acc: NettySyncServer, newItem: endpointToBind) =>
-            acc.addEndpoint(addEndpointTemplate(newItem.endpointId, newItem.displayString))
-          )
-          .port(config.serverPort)
-          .host("localhost")
-          .start()
+    val serverBinding =
+      endpointsToBind
+        .foldLeft(NettySyncServer(WebServer.serverOptions))((acc: NettySyncServer, newEndpoint: endpointToBind) =>
+          acc.addEndpoint(addEndpointTemplate(newEndpoint))
+        )
+        .port(config.serverPort)
+        .host("localhost")
+        .start()
 
-      // Access the port in NettySyncServerBinding
-      val boundPort = serverBinding.port
-      val boundHost = serverBinding.hostName
+    // Access the port in NettySyncServerBinding
+    val boundPort = serverBinding.port
+    val boundHost = serverBinding.hostName
 
-      // println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
-      WebServer.log.info(s"Server started → http://$boundHost:$boundPort")
+    // println(s"Server started → http://$boundHost:$boundPort/products/stream/xml")
+    WebServer.log.info(s"Server started → http://$boundHost:$boundPort")
 
-      // Keep the supervised scope alive until process termination
-      never
+    // Keep the supervised scope alive until process termination
+    never
   }
 }
