@@ -167,7 +167,7 @@ object WebServer extends StrictLogging:
         String, // set codec and mediaType (e.g., .out(streamTextBody(OxStreams)(CodecFormat.Xml())))
         OxStreams.BinaryStream, // fixed header for cache control (.out(header(HeaderNames.CacheControl, "no-cache")))
         OxStreams // fixed error handler (.errorOut(stringBody))
-      ]
+      ], dispatcher: String
   ): ServerEndpoint.Full[Unit, Unit, JsonDataForAlignment, String, OxStreams.BinaryStream, OxStreams, Identity] = {
     endpointToBind.handle { jsonInput =>
       if XmlValidator.isUnicodeValid(jsonInput.toString) then // Validates only for Unicode, not for markup
@@ -189,7 +189,7 @@ object WebServer extends StrictLogging:
             val gTa = x._2.head
             val sigla = x._2._2 // TODO: WTF
             val xmlResult =
-              displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set("xml")))
+              displayDispatch(ar, gTa, sigla, config.defaultColors, List(), Map("--format" -> Set(dispatcher)))
             xmlResult
         }
       else Left("Input data cannot be expressed as XML (invalid characters)")
@@ -201,7 +201,7 @@ object WebServer extends StrictLogging:
       .port(config.serverPort)
       .host("localhost")
       .addEndpoint(
-        addEndpointTemplate(xmlEndpoint)
+        addEndpointTemplate(xmlEndpoint, "xml")
       )
       .addEndpoint(
         teiEndpoint.handle { jsonInput =>
